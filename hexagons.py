@@ -22,19 +22,19 @@ def get_layout(orientation="flat", size=size, start_position=(0, 0)):
 
 
 class Hexagon:
-    def __init__(self, q, s, r, grid=None):
+    def __init__(self, q, r, s, grid=None):
         assert not (round(q + r + s) != 0), "q + r + s must be 0"
 
         self.q = q
-        self.s = s
         self.r = r
+        self.s = s
         self.grid = grid
 
     def __add__(self, other):
 
         q = self.q + other.q
-        s = self.s + other.s
         r = self.r + other.r
+        s = self.s + other.s
 
         if self.grid is not None:
             grid = self.grid
@@ -46,19 +46,19 @@ class Hexagon:
             grid = None
 
         if grid is not None:
-            if q in grid.hexs_dict and s in grid.hexs_dict[q]:
-                return grid[q, s]
+            if q in grid.hexs_dict and r in grid.hexs_dict[q]:
+                return grid[q, r]
 
-        return Hexagon(q, s, r, None)
+        return Hexagon(q, r, s, None)
 
     def __len__(self):
         return (abs(self.q) + abs(self.r) + abs(self.s)) // 2
 
     def __sub__(self, other):
-        return self + Hexagon(-other.q, -other.s, -other.r, other.grid)
+        return self + Hexagon(-other.q, -other.r, -other.s, other.grid)
 
     def __repr__(self):
-        return f"Hexagon(q={self.q}, s={self.s}, r={self.r}, grid={self.grid})"
+        return f"Hexagon(q={self.q}, s={self.r}, r={self.s}, grid={self.grid})"
 
     @property
     def neigs(self):
@@ -84,7 +84,7 @@ class Hexagon:
         layout = self.grid.layout
 
         corners = []
-        center = hex_to_pixel(layout, Hex(self.q, self.s, self.r))
+        center = hex_to_pixel(layout, Hex(self.q, self.r, self.s))
         for i in range(0, 6):
             offset = hex_corner_offset(layout, i)
             corners.append(Point(center.x + offset.x, center.y + offset.y))
@@ -100,7 +100,7 @@ class Hexagon:
             raise Exception("Can't draw polygon without grid")
 
         layout = self.grid.layout
-        center = hex_to_pixel(layout, Hex(self.q, self.s, self.r))
+        center = hex_to_pixel(layout, Hex(self.q, self.r, self.s))
 
         return [center.x, center.y]
 
@@ -110,14 +110,14 @@ class HexagonsGrid:
         self.layout = get_layout(orientation=orientation, size=size, start_position=start_pos)
         self.corners = corners
 
-        self.hexs = [Hexagon(_hex.q, _hex.s, -_hex.q - _hex.s, self) for _hex in self.gen_hexs()]
+        self.hexs = [Hexagon(_hex.q, _hex.r, -_hex.q - _hex.r, self) for _hex in self.gen_hexs()]
         self.hexs_dict = {}
 
         for _hex in self.hexs:
             self.hexs_dict[_hex.q] = {}
 
         for _hex in self.hexs:
-            self.hexs_dict[_hex.q][_hex.s] = _hex
+            self.hexs_dict[_hex.q][_hex.r] = _hex
             _hex.flag = 0
             _hex.color = 0
 
