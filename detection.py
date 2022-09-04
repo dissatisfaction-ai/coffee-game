@@ -145,7 +145,7 @@ def check_grid(image, grid, r):
     return hexs
 
 
-def plot_hexes_by_class(image, grid, hex_classes, r, orientation='flat', ax=None, skip_empty=False):
+def plot_hexes_by_class(image, grid, hex_classes, r, orientation='flat', ax=None, skip_empty=False, alpha=0.25):
     image = adaptive_threshold(image)
 
     if ax is None:
@@ -156,14 +156,14 @@ def plot_hexes_by_class(image, grid, hex_classes, r, orientation='flat', ax=None
     elif orientation == 'pointy':
         orientation = 0
 
-    color_classes = ['blue', 'red', 'yellowgreen', 'purple', 'darkorange',
-                     'forestgreen', 'peru', 'gold', 'aqua', 'springgreen', 'firebrick']
+    color_classes = ['blue', 'red', 'yellowgreen', 'purple', 'forestgreen',
+                     'darkorange', 'peru', 'gold', 'aqua', 'springgreen', 'firebrick']
 
     for h, (x, y) in zip(hex_classes, grid):
         if skip_empty and h == 0:
             continue
         hexagon = RegularPolygon((x, y), numVertices=6,
-                                 radius=r, alpha=0.2,
+                                 radius=r, alpha=alpha,
                                  edgecolor=(1, 0, 0, 1),
                                  orientation=orientation,
                                  facecolor=color_classes[h])
