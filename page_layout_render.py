@@ -172,7 +172,7 @@ def draw_qr(fpdf, qr_string):
                w=35, h=35)
 
 
-def renger_field(config, output_dir):
+def renger_field(config, output_name):
     fig = plt.figure(figsize=(8.27, 11.69))
     ax = fig.gca()
 
@@ -180,27 +180,28 @@ def renger_field(config, output_dir):
     draw_markers(hex_grid, players=config['players'], ax=ax)
     draw_corner_aruco(ax)
     sanitise_figure(fig)
-    fig.savefig(f"{output_dir}/game_field.pdf", bbox_inches='tight', pad_inches=0.0)
+    fig.savefig(output_name, bbox_inches='tight', pad_inches=0.0)
+    plt.close()
 
 
-def create_text_and_merge(qr_string, output_dir):
+def create_text_and_merge(qr_string, output_name):
     fpdf = get_fpdf_page()
     add_text(fpdf)
     draw_qr(fpdf, qr_string)
 
     pdf_with_text = PdfReader(fdata=bytes(fpdf.output())).pages[0]
 
-    pdf_field = PdfReader(f"{output_dir}/game_field.pdf")
+    pdf_field = PdfReader(output_name)
     pdf_merged = PdfWriter()
     pdf_merged.addpage(pdf_field.pages[0])
 
     PageMerge(pdf_merged.pagearray[0]).add(pdf_with_text, prepend=False).render()
-    pdf_merged.write(f"{output_dir}/game_field.pdf")
+    pdf_merged.write(output_name)
 
 
-def render_page(config, qr_string, output_dir='documents'):
-    renger_field(config, output_dir)
-    create_text_and_merge(qr_string, output_dir)
+def render_page(config, qr_string, output_name='documents/game_field.pdf'):
+    renger_field(config, output_name)
+    create_text_and_merge(qr_string, output_name)
 
 
 if __name__ == '__main__':
