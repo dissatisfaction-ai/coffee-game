@@ -36,7 +36,6 @@ def show_aruco(image: np.ndarray, aruco_found: dict, ax=None):
     ax.legend()
 
 
-
 def apply_perspective(image: np.ndarray, points_origin: Union[list, np.ndarray], ids: list):
     aruco_found = detect_aruco(image)
 
@@ -99,9 +98,9 @@ def adaptive_threshold(image: np.ndarray):
 
 
 def gamma_correction(image, gamma=0.5):
-    lookUpTable = np.empty((1,256), np.uint8)
+    lookUpTable = np.empty((1, 256), np.uint8)
     for i in range(256):
-        lookUpTable[0,i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
+        lookUpTable[0, i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
     image = cv2.LUT(image, lookUpTable)
     return image
 
@@ -130,11 +129,11 @@ def check_grid(image, grid, r):
     mask = create_circular_mask(mask_size, mask_size, radius=r)
 
     hexs = []
-    image = image > 185 # TODO
+    image = image > 185  # TODO
     for x, y in grid:
         mini_image = image[y - r:y + r, x - r:x + r]
 
-        if min(mini_image.shape) < mask_size: # TODO logging
+        if min(mini_image.shape) < mask_size:  # TODO logging
             hexs.append(False)
             continue
         # image[y - r: y + r, x - r: x + r] = image[y - r: y + r, x - r: x + r] * mask
@@ -146,18 +145,26 @@ def check_grid(image, grid, r):
     return hexs
 
 
-def plot_hex_grid(image, grid, hexes, r, ax=None):
+def plot_hexes_by_class(image, grid, hex_classes, r, orientation='flat', ax=None, skip_empty=False):
     image = adaptive_threshold(image)
 
     if ax is None:
         ax = plt.gca()
 
-    for h, (x, y) in zip(hexes, grid):
+    if orientation == 'flat':
+        orientation = np.pi / 2
+    elif orientation == 'pointy':
+        orientation = 0
+
+    color_classes = ['blue', 'red', 'yellowgreen', 'purple', 'darkorange', 'forestgreen', 'peru', 'gold']
+
+    for h, (x, y) in zip(hex_classes, grid):
+        if skip_empty and h == 0:
+            continue
         hexagon = RegularPolygon((x, y), numVertices=6,
                                  radius=r, alpha=0.2,
                                  edgecolor=(1, 0, 0, 1),
-                                 orientation=np.pi / 2,
-                                 facecolor='red' if h else 'blue')
+                                 orientation=orientation,
+                                 facecolor=color_classes[h])
         ax.add_patch(hexagon)
     ax.imshow(image, cmap='Greys_r')
-
