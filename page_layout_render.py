@@ -2,24 +2,9 @@ import numpy as np
 from cv2 import aruco
 import matplotlib.pyplot as plt
 from hexagons import HexagonsGrid
-from matplotlib import font_manager
 from pdfrw import PageMerge, PdfReader, PdfWriter
 from fpdf import FPDF, HTMLMixin
 import qrcode
-
-
-class PDF(FPDF, HTMLMixin):
-    pass
-
-
-# font_dirs = ['./fonts/']
-# font_files = font_manager.findSystemFonts(fontpaths=font_dirs)
-
-# for font_file in font_files:
-#    font_manager.fontManager.addfont(font_file)
-
-# set font
-# plt.rcParams['font.family'] = 'Futura PT'
 
 # global documents param
 h = 297  # height in mm
@@ -30,11 +15,26 @@ header_size = 55  # height fo the header in mm
 corner_aruco_size = 8  # size of the corner aruco markers in mm
 
 
-def plot_aruco(i, x, y, size):
+def create_hex_grid(grid_size=5, orientation='pointy', ax=None):
+    if ax is None:
+        ax = plt.gca()
+
+    hex_grid = HexagonsGrid(orientation=orientation, size=grid_size * pf,
+                            start_pos=((pd + 10) * pf, (header_size + pd + 15) * pf),
+                            corners=(((pd + 10) * pf, (header_size + pd + 15) * pf),
+                                     ((w - pd - 10) * pf, (h - pd - 15) * pf)))
+    q = np.array(hex_grid.get_polygons(loop=True))
+    qc = np.array(hex_grid.get_centers())
+    ax.plot(q[:, :, 0].T, q[:, :, 1].T, color='gainsboro', zorder=1)
+    return hex_grid
+
+
+def plot_aruco(i, x, y, size, ax=None):
     """
 
     Parameters
     ----------
+    ax
     i
     x
     y
@@ -45,96 +45,98 @@ def plot_aruco(i, x, y, size):
     -------
 
     """
+    if ax is None:
+        ax = plt.gca()
     aruco_dict = aruco.Dictionary_get(aruco.DICT_ARUCO_ORIGINAL)
     aruco_img = aruco.drawMarker(aruco_dict, i, size * pf)
-    plt.imshow(aruco_img, extent=(x * pf, (x + size) * pf, (y + size) * pf, y * pf),
-               cmap='Greys_r', zorder=5, interpolation='none')
+    ax.imshow(aruco_img, extent=(x * pf, (x + size) * pf, (y + size) * pf, y * pf),
+              cmap='Greys_r', zorder=5, interpolation='none')
 
 
-fig = plt.figure(figsize=(8.27, 11.69))
+def draw_random_markers(hex_grid, ax=None):
+    if ax is None:
+        ax = plt.gca()
 
-# plot hexagonal grid
-hg = HexagonsGrid(orientation='pointy', size=5 * pf,
-                  start_pos=((pd + 10) * pf, (header_size + pd + 15) * pf),
-                  corners=(((pd + 10) * pf, (header_size + pd + 15) * pf),
-                           ((w - pd - 10) * pf, (h - pd - 15) * pf)))
-q = np.array(hg.get_polygons(loop=True))
-qc = np.array(hg.get_centers())
+    q = np.array(hex_grid.get_polygons(loop=True))
+    qc = np.array(hex_grid.get_centers())
 
-plt.plot(q[:, :, 0].T, q[:, :, 1].T, color='gainsboro', zorder=1)
-
-# add random locations for participants
-n_participants = 8
-participant_aruco_size = 5
-ids = q.shape[0]
-rng = np.random.RandomState(seed=42)
-selected = rng.choice(np.arange(ids), n_participants, replace=False)
-for i in range(n_participants):
-    plot_aruco(i + 10, (qc[selected[i], 0] / pf - participant_aruco_size / 2),
-               (qc[selected[i], 1] / pf - participant_aruco_size / 2),
-               size=participant_aruco_size)
-    plt.fill(q[selected[i], :, 0].T, q[selected[i], :, 1].T, color='gainsboro', zorder=0)
-
-# temporary plot border lines
-# plt.axhline(pd * pf)
-# plt.axhline((-pd + h) * pf)
-# plt.axvline(pd * pf)
-# plt.axvline((-pd + w) * pf)
-
-# plt.axhline((header_size + pd) * pf, color='black')
-
-# add aruco to corners
-aruco_coords = np.array([
-    [[pd], [header_size + pd]],
-    [[w - pd - corner_aruco_size], [header_size + pd]],
-    [[pd], [h - pd - corner_aruco_size]],
-    [[w - pd - corner_aruco_size], [h - pd - corner_aruco_size]]
-])
-plot_aruco(0, pd, header_size + pd, corner_aruco_size)
-plot_aruco(1, w - pd - corner_aruco_size, header_size + pd, corner_aruco_size)
-plot_aruco(2, pd, h - pd - corner_aruco_size, corner_aruco_size)
-plot_aruco(3, w - pd - corner_aruco_size, h - pd - corner_aruco_size, corner_aruco_size)
-print(aruco_coords)
-# pull plots on the A4 size page
-plt.gca().set_position([0, 0, 1, 1])
-plt.xlim(0, w * pf)
-plt.ylim(0, h * pf)
-plt.gca().invert_yaxis()
-plt.gca().axis('off')
-plt.gca().set_axis_off()
-
-plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
-                    hspace=0, wspace=0)
-plt.margins(0, 0)
-plt.gca().xaxis.set_major_locator(plt.NullLocator())
-plt.gca().yaxis.set_major_locator(plt.NullLocator())
-
-fig.savefig("documents/test.pdf", bbox_inches='tight', pad_inches=0.0)
-plt.close()
-
-# text part
-title = "The Coffee Game"
-text_left = "Welcome to The Coffee Game. The rules are simple - you " \
-            "drink your coffee, you put a cross next to the field " \
-            "associated with your name. The only two requirements are: " \
-            "1. Keep your field of crosses **connected**; " \
-            "2. Never get closer than **one tile** to " \
-            "the fields of other participants. Enjoy!"
-plt.text(w * pf / 2, (pd + 1) * pf, title, fontsize=32,
-         horizontalalignment='center',
-         verticalalignment='top')
-plt.text((pd + 10) * pf / 2, (pd + 20) * pf, text_left, horizontalalignment='left',
-         verticalalignment='top', fontsize=14, wrap=True)
+    n_participants = 8
+    participant_aruco_size = 5
+    ids = q.shape[0]
+    rng = np.random.RandomState(seed=42)
+    selected = rng.choice(np.arange(ids), n_participants, replace=False)
+    for i in range(n_participants):
+        plot_aruco(i + 10, (qc[selected[i], 0] / pf - participant_aruco_size / 2),
+                   (qc[selected[i], 1] / pf - participant_aruco_size / 2),
+                   size=participant_aruco_size)
+        ax.fill(q[selected[i], :, 0].T, q[selected[i], :, 1].T, color='gainsboro', zorder=0)
 
 
-def new_content():
+def draw_markers(hex_grid, players, ax=None):
+    if ax is None:
+        ax = plt.gca()
+
+    participant_aruco_size = 5
+
+    for p in players:
+        hex = hex_grid[p['coords'][0], p['coords'][1]]
+        center = hex.get_center()
+        vertices = np.array(hex.get_polygon(loop=True))
+        plot_aruco(10, (center[0] / pf - participant_aruco_size / 2),
+                   (center[1] / pf - participant_aruco_size / 2),
+                   size=participant_aruco_size)
+        ax.fill(vertices[:, 0], vertices[:, 1], color='gainsboro', zorder=0)
+
+
+def draw_corner_aruco(ax):
+    # add aruco to corners
+    plot_aruco(0, pd, header_size + pd, corner_aruco_size, ax=ax)
+    plot_aruco(1, w - pd - corner_aruco_size, header_size + pd, corner_aruco_size, ax=ax)
+    plot_aruco(2, pd, h - pd - corner_aruco_size, corner_aruco_size, ax=ax)
+    plot_aruco(3, w - pd - corner_aruco_size, h - pd - corner_aruco_size, corner_aruco_size, ax=ax)
+
+
+def sanitise_figure(fig):
+    ax = fig.gca()
+    # pull plots on the A4 size page
+    ax.set_position([0, 0, 1, 1])
+    ax.set_xlim(0, w * pf)
+    ax.set_ylim(0, h * pf)
+    ax.invert_yaxis()
+    ax.axis('off')
+    ax.set_axis_off()
+
+    fig.subplots_adjust(top=1, bottom=0, right=1, left=0,
+                        hspace=0, wspace=0)
+    ax.margins(0, 0)
+    ax.xaxis.set_major_locator(plt.NullLocator())
+    ax.yaxis.set_major_locator(plt.NullLocator())
+
+
+class PDF(FPDF, HTMLMixin):
+    pass
+
+
+def get_fpdf_page():
     fpdf = PDF()
     fpdf.add_page()
     fpdf.add_font("Futura PT", fname=r'./fonts/FuturaPTBook.ttf')
     fpdf.add_font("Futura PT", style='I', fname=r'./fonts/FuturaPTBookOblique.ttf')
     fpdf.add_font("Futura PT", style='B', fname=r'./fonts/FuturaPTHeavy.ttf')
-    fpdf.set_font("Futura PT")
+    return fpdf
 
+
+def add_text(fpdf):
+    # text part
+    title = "The Coffee Game"
+    text_left = "Welcome to The Coffee Game. The rules are simple - you " \
+                "drink your coffee, you put a cross next to the field " \
+                "associated with your name. The only two requirements are:\n" \
+                "1. Keep your field of crosses **connected**; \n" \
+                "2. Never get closer than **one tile** to " \
+                "the fields of other participants. Enjoy!"
+
+    fpdf.set_font("Futura PT")
     # title
     fpdf.set_font("helvetica", size=32)
     width = fpdf.get_string_width(title) + 6
@@ -154,18 +156,64 @@ def new_content():
     fpdf.multi_cell(120, 5, text_left, markdown=True)
     fpdf.ln()
 
-    img = qrcode.make("www.cancerclonemaps.org")
+
+def draw_qr(fpdf, qr_string):
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=4,
+        border=4,
+    )
+
+    qr.add_data(qr_string)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
     fpdf.image(img.get_image(), x=120 + 40, y=23,
-               w=25, h=25)
-
-    reader = PdfReader(fdata=bytes(fpdf.output()))
-    return reader.pages[0]
+               w=35, h=35)
 
 
-# merge text pdf with the game field pdf
-pdf_field = PdfReader("documents/test.pdf")
-pdf_merged = PdfWriter()
-pdf_merged.addpage(pdf_field.pages[0])
+def renger_field(config, output_dir):
+    fig = plt.figure(figsize=(8.27, 11.69))
+    ax = fig.gca()
 
-PageMerge(pdf_merged.pagearray[0]).add(new_content(), prepend=False).render()
-pdf_merged.write("documents/test.pdf")
+    hex_grid = create_hex_grid(grid_size=config['hex_size'], orientation=config['type'], ax=ax)
+    draw_markers(hex_grid, players=config['players'], ax=ax)
+    draw_corner_aruco(ax)
+    sanitise_figure(fig)
+    fig.savefig(f"{output_dir}/game_field.pdf", bbox_inches='tight', pad_inches=0.0)
+
+
+def create_text_and_merge(qr_string, output_dir):
+    fpdf = get_fpdf_page()
+    add_text(fpdf)
+    draw_qr(fpdf, qr_string)
+
+    pdf_with_text = PdfReader(fdata=bytes(fpdf.output())).pages[0]
+
+    pdf_field = PdfReader(f"{output_dir}/game_field.pdf")
+    pdf_merged = PdfWriter()
+    pdf_merged.addpage(pdf_field.pages[0])
+
+    PageMerge(pdf_merged.pagearray[0]).add(pdf_with_text, prepend=False).render()
+    pdf_merged.write(f"{output_dir}/game_field.pdf")
+
+
+def render_page(config, qr_string, output_dir='documents'):
+    renger_field(config, output_dir)
+    create_text_and_merge(qr_string, output_dir)
+
+
+if __name__ == '__main__':
+    s = 'https://test.org?dshfkjdshfkdsjhgkjsdngshgjdshgflsgfkjshgdksjnghgoijgkhflgsgkdshgsad' \
+        'jgkshlgkdjs;kgfslhgacm;sjgkfjgmcajgc;lgjmlkdsjg;lmsdhkfd'
+
+    config = {'type': 'pointy',
+              'hex_size': 5,
+              'players': [{'name': 'Player1', 'coords': [-2, 12]},
+                          {'name': 'Player2', 'coords': [-8, 17]},
+                          {'name': 'Player3', 'coords': [0, 9]},
+                          {'name': 'Player4', 'coords': [18, 2]},
+                          {'name': 'Player5', 'coords': [-11, 27]},
+                          {'name': 'Player6', 'coords': [3, 24]},
+                          {'name': 'Player7', 'coords': [9, 9]}]}
+    render_page(config, s)
