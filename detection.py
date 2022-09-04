@@ -145,7 +145,8 @@ def check_grid(image, grid, r):
     return hexs
 
 
-def plot_hexes_by_class(image, grid, hex_classes, r, orientation='flat', ax=None, skip_empty=False, alpha=0.25):
+def plot_hexes_by_class(image, grid, hex_classes, r, orientation='flat', ax=None,
+                        skip_empty=False, alpha=0.25):
     image = adaptive_threshold(image)
 
     if ax is None:
@@ -168,4 +169,6 @@ def plot_hexes_by_class(image, grid, hex_classes, r, orientation='flat', ax=None
                                  orientation=orientation,
                                  facecolor=color_classes[h])
         ax.add_patch(hexagon)
-    ax.imshow(image, cmap='Greys_r')
+
+    if image is not None:
+        ax.imshow(image, cmap='Greys_r')
