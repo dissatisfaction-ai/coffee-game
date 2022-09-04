@@ -58,7 +58,7 @@ class Hexagon:
         return self + Hexagon(-other.q, -other.r, -other.s, other.grid)
 
     def __repr__(self):
-        return f"Hexagon(q={self.q}, s={self.r}, r={self.s}, grid={self.grid})"
+        return f"Hexagon(q={self.q}, r={self.r}, s={self.s}, grid={self.grid})"
 
     @property
     def neigs(self):
@@ -156,7 +156,6 @@ class HexagonsGrid:
         return hexs
 
     def get_polygons(self, loop=False):
-        layout = self.layout
         hexs = self.hexs
 
         polygons = [h.get_polygon(loop=loop) for h in hexs]
