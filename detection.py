@@ -156,7 +156,8 @@ def plot_hexes_by_class(image, grid, hex_classes, r, orientation='flat', ax=None
     elif orientation == 'pointy':
         orientation = 0
 
-    color_classes = ['blue', 'red', 'yellowgreen', 'purple', 'darkorange', 'forestgreen', 'peru', 'gold']
+    color_classes = ['blue', 'red', 'yellowgreen', 'purple', 'darkorange',
+                     'forestgreen', 'peru', 'gold', 'aqua', 'springgreen', 'firebrick']
 
     for h, (x, y) in zip(hex_classes, grid):
         if skip_empty and h == 0:
