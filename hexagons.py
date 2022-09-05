@@ -73,8 +73,8 @@ class Hexagon:
 
         return [self + i for i in hex_directions if (self + i).grid]
 
-    @classmethod
-    def dist(cls, a, b):
+    @staticmethod
+    def dist(a, b):
         return len(a - b)
 
     def get_polygon(self, loop=False):
@@ -104,9 +104,26 @@ class Hexagon:
 
         return [center.x, center.y]
 
+    def get_cross(self):
+        if self.grid is None:
+            raise Exception("Can't draw polygon without grid")
+
+        x, y = self.get_center()
+        r = self.grid.size
+        h = r * 3**0.5 / 2
+        f = h / 2
+        f = f / 2**0.5
+
+        x_shifts = np.array([0, -1, 0, 1, 0, 1, 0, -1, 0]) * f
+        y_shifts = np.array([0, 1, 0, 1, 0, -1, 0, -1, 0]) * f
+
+        return np.array([np.array([x]*9) + x_shifts, np.array([y]*9) + y_shifts]).T.tolist()
+
 
 class HexagonsGrid:
     def __init__(self, orientation='flat', size=5, start_pos=(0, 0), corners=((0, 0), (210, 297))):
+
+        self.size = size
         self.layout = get_layout(orientation=orientation, size=size, start_position=start_pos)
         self.corners = corners
 
@@ -169,6 +186,13 @@ class HexagonsGrid:
 
         return centers
 
+    def get_crosses(self):
+        hexs = self.hexs
+
+        crosses = [h.get_cross() for h in hexs]
+
+        return crosses
+
     def __getitem__(self, item):
         if len(item) == 2:
             q, r = item
@@ -186,25 +210,33 @@ class HexagonsGrid:
 
         return self.hexs_dict[h.q][h.r]
 
-    def draw(self):
+    def draw(self, color=None, alpha=1):
         coords = np.array(self.get_polygons(loop=True))
-        plt.plot(coords[:, :, 0].T, coords[:, :, 1].T)
+        plt.plot(coords[:, :, 0].T, coords[:, :, 1].T, color=color, alpha=alpha)
         plt.axis("equal")
+
+    @staticmethod
+    def draw_hexs(hexs, color=None, alpha=1):
+        polygons = np.array([h.get_polygon(loop=True) for h in hexs])
+        plt.plot(polygons[:, :, 0].T, polygons[:, :, 1].T, color=color, alpha=alpha)
+
+    @staticmethod
+    def draw_crosses(hexs, color=None, alpha=1):
+        crosses = np.array([h.get_cross() for h in hexs])
+        plt.plot(crosses[:, :, 0].T, crosses[:, :, 1].T, color=color, alpha=alpha)
 
     def bfs(self, h):
         hexs = []
         q = deque()
+        h.color = 1
         q.append(h)
 
         while len(q) != 0:
             h = q.popleft()
             hexs.append(h)
-            h.color = 1
             for neig in h.neigs:
                 if neig.color == 0 and neig.flag == 1:
+                    neig.color = 1
                     q.append(neig)
 
         return hexs
-
-
-

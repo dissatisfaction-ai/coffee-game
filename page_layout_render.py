@@ -24,7 +24,6 @@ def create_hex_grid(grid_size=5, orientation='pointy', ax=None):
                             corners=(((pd + 10) * pf, (header_size + pd + 15) * pf),
                                      ((w - pd - 10) * pf, (h - pd - 15) * pf)))
     q = np.array(hex_grid.get_polygons(loop=True))
-    qc = np.array(hex_grid.get_centers())
     ax.plot(q[:, :, 0].T, q[:, :, 1].T, color='gainsboro', zorder=1)
     return hex_grid
 
@@ -176,7 +175,7 @@ def renger_field(config, output_name):
     fig = plt.figure(figsize=(8.27, 11.69))
     ax = fig.gca()
 
-    hex_grid = create_hex_grid(grid_size=config['hex_size'], orientation=config['type'], ax=ax)
+    hex_grid = create_hex_grid(grid_size=config['grid_size'], orientation=config['orientation'], ax=ax)
     draw_markers(hex_grid, players=config['players'], ax=ax)
     draw_corner_aruco(ax)
     sanitise_figure(fig)
