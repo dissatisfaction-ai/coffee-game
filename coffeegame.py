@@ -28,10 +28,13 @@ class CoffeeGame:
         }
         self.url = url
 
-    def generate_arrangement(self, n, threshold=4):
+    def __len__(self):
+        return len(self.hex_grid)
+
+    def generate_arrangement(self, n, threshold=4, border_dist=2):
         r = np.random.RandomState(self.random_state)
         while True:
-            hexs = r.choice([h for h in self.hex_grid.hexs if len(h.neigs) == 6], n, replace=False).tolist()
+            hexs = r.choice([h for h in self.hex_grid.hexs if h.border_dist >= border_dist], n, replace=False).tolist()
             if n <= 1:
                 break
 

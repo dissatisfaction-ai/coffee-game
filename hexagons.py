@@ -138,6 +138,8 @@ class HexagonsGrid:
             _hex.flag = 0
             _hex.color = 0
 
+        self.calculate_border_distances()
+
     def gen_hexs(self):
         layout = self.layout
         p1, p2 = self.corners
@@ -193,6 +195,9 @@ class HexagonsGrid:
 
         return crosses
 
+    def __len__(self):
+        return len(self.hexs)
+
     def __getitem__(self, item):
         if len(item) == 2:
             q, r = item
@@ -217,6 +222,8 @@ class HexagonsGrid:
 
     @staticmethod
     def draw_hexs(hexs, color=None, alpha=1):
+        if len(hexs) == 0:
+            return
         polygons = np.array([h.get_polygon(loop=True) for h in hexs])
         plt.plot(polygons[:, :, 0].T, polygons[:, :, 1].T, color=color, alpha=alpha)
 
@@ -225,7 +232,7 @@ class HexagonsGrid:
         crosses = np.array([h.get_cross() for h in hexs])
         plt.plot(crosses[:, :, 0].T, crosses[:, :, 1].T, color=color, alpha=alpha)
 
-    def bfs(self, h):
+    def bfs(self, h, clean=False):
         hexs = []
         q = deque()
         h.color = 1
@@ -239,4 +246,33 @@ class HexagonsGrid:
                     neig.color = 1
                     q.append(neig)
 
+        if clean:
+            for h in hexs:
+                h.color = 0
+
         return hexs
+
+    def clean(self):
+        for _hex in self.hexs:
+            _hex.flag = 0
+            _hex.color = 0
+
+    def calculate_border_distances(self):
+        self.clean()
+        q = deque()
+
+        for h in self.hexs:
+            if len(h.neigs) < 6:
+                h.border_dist = 0
+                h.color = 1
+                q.append(h)
+
+        while len(q) != 0:
+            h = q.popleft()
+            for neig in h.neigs:
+                if neig.color == 0:
+                    neig.color = 1
+                    neig.border_dist = h.border_dist + 1
+                    q.append(neig)
+
+        self.clean()
