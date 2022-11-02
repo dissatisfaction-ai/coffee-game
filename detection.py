@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 from scipy import ndimage
 from typing import Union
+from dataclasses import dataclass
 
 
 def detect_aruco(image: np.ndarray):
@@ -147,7 +148,6 @@ def check_grid(image, grid, r):
 
 def plot_hexes_by_class(image, grid, hex_classes, r, orientation='flat', ax=None,
                         skip_empty=False, alpha=0.25):
-
     if ax is None:
         ax = plt.gca()
 
@@ -176,3 +176,36 @@ def plot_hexes_by_class(image, grid, hex_classes, r, orientation='flat', ax=None
         ax.set_xlim(0, 2000)
         ax.set_ylim(0, 2400)
         ax.set_aspect('equal')
+
+
+@dataclass(init=True)
+class DetectionStages:
+    image: np.ndarray
+    arucos: dict
+    pts_origin: np.array
+    crop: np.ndarray
+    corrected: np.ndarray
+    illumination_mask: np.ndarray
+    hexes: list
+    r: float
+    points: list
+    orientation: str
+
+    def plot_decoding_debug(self):
+        fig, axs = plt.subplots(1, 5, figsize=(20, 4))
+        axs = axs.flatten()
+        show_aruco(self.image, self.arucos, ax=axs[0])
+        axs[1].imshow(self.crop)
+        axs[2].imshow(self.corrected)
+        axs[3].imshow(self.illumination_mask)
+        plot_hexes_by_class(self.corrected, self.points, self.hexes, r=self.r, ax=axs[4], orientation=self.orientation)
+        plt.show()
+
+    def plot_result(self, skip_empty=False, binary=True):
+        hexes = self.hexes
+        if binary:
+            hexes = [bool(i) for i in hexes]
+        plot_hexes_by_class(self.corrected, self.points, hexes, r=self.r,
+                            orientation=self.orientation, skip_empty=skip_empty)
+        plt.show()
+
