@@ -89,11 +89,24 @@ class CoffeeGame:
             h.color = 0
 
         components = []
+
+        colors = {}
         for index, player in enumerate(self.config['players']):
             q, r = player['coords']
             components.append(self.hex_grid.bfs(self.hex_grid[q, r]))
             for h in components[-1]:
+                colors[h] = len(components)
                 self.config['players'][index]['components'].append([h.q, h.r])
+
+        hexes = [colors.get(self.hex_grid.get_hexagon_by_coord(*((p + coord) * 10)), 0) for h, p in zip(hexes, np.array(points))]
+
+        arucos = detection.detect_aruco(gray)
+        return detection.DetectionStages(
+            image=image, arucos=arucos,
+            pts_origin=pts_origin, crop=crop, corrected=corrected,
+            illumination_mask=illumination_mask, hexes=hexes,
+            r=50, points=points, orientation='pointy'
+        )
 
     def generate_game_field(self, path):
         render_page(self.config, self.encode_string(self.config, self.url), output_name=path)

@@ -208,4 +208,3 @@ class DetectionStages:
         plot_hexes_by_class(self.corrected, self.points, hexes, r=self.r,
                             orientation=self.orientation, skip_empty=skip_empty)
         plt.show()
-
