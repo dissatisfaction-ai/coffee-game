@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 class CoffeeGame:
-    def __init__(self, players=(), orientation='pointy', grid_size=5, url='', random_state=42):
+    def __init__(self, players=(), orientation='pointy', grid_size=5, url='', uuid='', random_state=42):
 
         self.hex_grid = self.create_grid(orientation=orientation, grid_size=grid_size)
         self.random_state = random_state
@@ -27,6 +27,7 @@ class CoffeeGame:
             } for name, coord in zip(players, coords)]
         }
         self.url = url
+        self.uuid = uuid
 
     def __len__(self):
         return len(self.hex_grid)
@@ -50,6 +51,7 @@ class CoffeeGame:
         return hexs
 
     def load_config(self, config):
+        print(config)
         self.hex_grid = self.create_grid(orientation=config['orientation'], grid_size=config['grid_size'])
         self.config = config
 
@@ -64,7 +66,11 @@ class CoffeeGame:
         # recreate whole grid
         detect = cv2.QRCodeDetector()
         value, points, straight_qrcode = detect.detectAndDecode(image)
-        config = self.decode_string(value)
+        config, url, uuid = self.decode_string(value)
+
+        self.url = url
+        self.uuid = uuid
+        print(config)
         self.load_config(config)
 
         # recognition
@@ -95,8 +101,10 @@ class CoffeeGame:
             for h in components[-1]:
                 self.config['players'][index]['components'].append([h.q, h.r])
 
+        return self
+
     def generate_game_field(self, path):
-        render_page(self.config, self.encode_string(self.config, self.url), output_name=path)
+        render_page(self.config, self.encode_string(self.config, self.url, self.uuid), output_name=path)
 
     def rename_players(self, players: dict):
         for player in self.config['players']:
@@ -124,8 +132,8 @@ class CoffeeGame:
         } for player in self.config["players"]]
 
     @staticmethod
-    def encode_string(data: dict, url) -> str:
-        s = ""
+    def encode_string(data: dict, url, uuid) -> str:
+        s = f'uuid={uuid}&'
         if data['orientation'] == "pointy":
             s += 'p'
         else:
@@ -140,8 +148,10 @@ class CoffeeGame:
 
     @staticmethod
     def decode_string(s: str) -> dict:
-        s = s.split("?")[-1]
-        s.split("&")
+        url = s.split("?")[0]
+        uuid = s.split("?")[-1].split("&")[0].split("=")[-1]
+        s = "&".join(s.split("?")[-1].split("&")[1:])
+        print(url, uuid, s)
         data = {
             "orientation": 'pointy' if s[0] == 'p' else 'flat',
             "grid_size": int(s.split("&")[0][2:]),
@@ -151,7 +161,7 @@ class CoffeeGame:
                 "components": []
             } for i, j in [p.split("=") for p in s.split("&")[1:]]]
         }
-        return data
+        return data, url, uuid
 
     @staticmethod
     def create_grid(orientation='pointy', grid_size=5):
