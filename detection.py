@@ -1,11 +1,12 @@
-from cv2 import aruco
+from dataclasses import dataclass
+from typing import Union
+
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from cv2 import aruco
 from matplotlib.patches import RegularPolygon
 from scipy import ndimage
-from typing import Union
-from dataclasses import dataclass
 
 
 def detect_aruco(image: np.ndarray):
@@ -53,7 +54,7 @@ def apply_perspective(image: np.ndarray, points_origin: Union[list, np.ndarray],
     M = cv2.getPerspectiveTransform(points_image, points_origin)
     dst = cv2.warpPerspective(image, M, image_orig_size)
 
-    return dst, min_coord
+    return dst, min_coord, M
 
 
 def threshold_markers_CLAHE(image: np.ndarray):
@@ -126,11 +127,12 @@ def create_points_grid(x, y, n_rows, n_cols, r, h):
 
 
 def check_grid(image, grid, r):
+    r = int(r * 0.85)
     mask_size = r * 2
     mask = create_circular_mask(mask_size, mask_size, radius=r)
 
     hexs = []
-    image = image > 185  # TODO
+    image = image > 210  # TODO
     for x, y in grid:
         mini_image = image[y - r:y + r, x - r:x + r]
 
@@ -138,7 +140,7 @@ def check_grid(image, grid, r):
             hexs.append(False)
             continue
         # image[y - r: y + r, x - r: x + r] = image[y - r: y + r, x - r: x + r] * mask
-        if mini_image[mask].mean() < 0.97:  # TODO
+        if mini_image[mask].mean() < 0.975:  # TODO
             hexs.append(True)
         else:
             hexs.append(False)
@@ -190,6 +192,7 @@ class DetectionStages:
     r: float
     points: list
     orientation: str
+    transform: np.ndarray
 
     def plot_decoding_debug(self):
         fig, axs = plt.subplots(1, 5, figsize=(20, 4))
@@ -199,12 +202,13 @@ class DetectionStages:
         axs[2].imshow(self.corrected)
         axs[3].imshow(self.illumination_mask)
         plot_hexes_by_class(self.corrected, self.points, self.hexes, r=self.r, ax=axs[4], orientation=self.orientation)
-        plt.show()
 
-    def plot_result(self, skip_empty=False, binary=True):
+    def plot_result(self, skip_empty=False, binary=True, alpha=0.25, show_image=True):
         hexes = self.hexes
         if binary:
             hexes = [bool(i) for i in hexes]
-        plot_hexes_by_class(self.corrected, self.points, hexes, r=self.r,
-                            orientation=self.orientation, skip_empty=skip_empty)
-        plt.show()
+        image = None
+        if show_image:
+            image = self.corrected
+        plot_hexes_by_class(image, self.points, hexes, r=self.r,
+                            orientation=self.orientation, skip_empty=skip_empty, alpha=0.25)

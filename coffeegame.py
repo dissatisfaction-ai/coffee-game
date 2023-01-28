@@ -1,11 +1,15 @@
-import cv2
-from hexagons import HexagonsGrid
-import detection
-import numpy as np
-from page_layout_render import render_page
-import matplotlib.pyplot as plt
-from typing import Union
 from pathlib import Path
+from typing import Union
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import zbarlight
+from PIL import Image
+
+import detection
+from hexagons import HexagonsGrid
+from page_layout_render import render_page
 
 
 class CoffeeGame:
@@ -51,7 +55,6 @@ class CoffeeGame:
         return hexs
 
     def load_config(self, config):
-        print(config)
         self.hex_grid = self.create_grid(orientation=config['orientation'], grid_size=config['grid_size'])
         self.config = config
 
@@ -61,16 +64,17 @@ class CoffeeGame:
         return self.config
 
     def proceed_image(self, image_path: Union[str, Path]):
-        image = plt.imread(image_path)
+        image  = Image.open(image_path)
+        qr_code_value = zbarlight.scan_codes(['qrcode'], image)[0].decode('utf-8')
+        config, url, uuid = self.decode_string(qr_code_value)
 
-        # recreate whole grid
-        detect = cv2.QRCodeDetector()
-        value, points, straight_qrcode = detect.detectAndDecode(image)
-        config, url, uuid = self.decode_string(value)
+        image = np.array(image)
+
+        if image.shape[0] < image.shape[1]:
+            image = np.rot90(image, k=3)
 
         self.url = url
         self.uuid = uuid
-        print(config)
         self.load_config(config)
 
         # recognition
@@ -78,7 +82,7 @@ class CoffeeGame:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         pts_origin = np.array([[5, 60], [205, 60], [5, 292], [205, 292]]) * 10
-        crop, coord = detection.apply_perspective(gray, pts_origin, [0, 1, 2, 3])
+        crop, coord, transform_matrix = detection.apply_perspective(gray, pts_origin, [0, 1, 2, 3])
 
         p = np.array(self.hex_grid.get_centers()) / 10 - coord
 
@@ -113,7 +117,7 @@ class CoffeeGame:
             image=image, arucos=arucos,
             pts_origin=pts_origin, crop=crop, corrected=corrected,
             illumination_mask=illumination_mask, hexes=hexes,
-            r=50, points=points, orientation='pointy'
+            r=50, points=points, orientation='pointy', transform=transform_matrix
         )
 
     def generate_game_field(self, path):
@@ -164,7 +168,6 @@ class CoffeeGame:
         url = s.split("?")[0]
         uuid = s.split("?")[-1].split("&")[0].split("=")[-1]
         s = "&".join(s.split("?")[-1].split("&")[1:])
-        print(url, uuid, s)
         data = {
             "orientation": 'pointy' if s[0] == 'p' else 'flat',
             "grid_size": int(s.split("&")[0][2:]),

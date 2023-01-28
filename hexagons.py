@@ -1,8 +1,9 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from hexlib import *
 from collections import deque
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+from hexlib import *
 
 size = 15
 flat = Layout(layout_flat, Point(size, size), Point(0, 0))
