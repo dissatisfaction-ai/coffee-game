@@ -11,6 +11,7 @@ import detection
 from hexagons import HexagonsGrid
 from page_layout_render import render_page
 
+from exceptions import ImageLoadingException, ImageProcessingException, QRNotFoundException, QRCodeIncorrectException
 
 class CoffeeGame:
     def __init__(self, players=(), orientation='pointy', grid_size=5, url='', uuid='', random_state=42):
@@ -64,61 +65,76 @@ class CoffeeGame:
         return self.config
 
     def proceed_image(self, image_path: Union[str, Path]):
-        image  = Image.open(image_path)
-        qr_code_value = zbarlight.scan_codes(['qrcode'], image)[0].decode('utf-8')
-        config, url, uuid = self.decode_string(qr_code_value)
+        try:
+            image = Image.open(image_path)
+        except:
+            raise ImageLoadingException
 
+        try:
+            qr_code_value = zbarlight.scan_codes(['qrcode'], image)[0].decode('utf-8')
+        except:
+            raise QRNotFoundException
+
+        try:
+            config, url, uuid = self.decode_string(qr_code_value)
+
+            self.url = url
+            self.uuid = uuid
+            self.load_config(config)
+        except:
+            raise QRCodeIncorrectException
+
+        
         image = np.array(image)
 
         if image.shape[0] < image.shape[1]:
             image = np.rot90(image, k=3)
 
-        self.url = url
-        self.uuid = uuid
-        self.load_config(config)
-
         # recognition
-        image = detection.gamma_correction(image, gamma=0.5)
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        try:
+            image = detection.gamma_correction(image, gamma=0.5)
+            gray = image.mean(axis=2).astype(np.uint8)
 
-        pts_origin = np.array([[5, 60], [205, 60], [5, 292], [205, 292]]) * 10
-        crop, coord, transform_matrix = detection.apply_perspective(gray, pts_origin, [0, 1, 2, 3])
+            pts_origin = np.array([[5, 60], [205, 60], [5, 292], [205, 292]]) * 10
+            crop, coord, transform_matrix = detection.apply_perspective(gray, pts_origin, [0, 1, 2, 3])
 
-        p = np.array(self.hex_grid.get_centers()) / 10 - coord
+            p = np.array(self.hex_grid.get_centers()) / 10 - coord
 
-        corrected, illumination_mask = detection.threshold_makrers_illumanation(crop)
+            corrected, illumination_mask = detection.threshold_makrers_illumanation(crop)
 
-        points = p.astype(int).tolist()
-        hexes = detection.check_grid(corrected, grid=points, r=42)
+            points = p.astype(int).tolist()
+            hexes = detection.check_grid(corrected, grid=points, r=42)
 
-        hexs = [self.hex_grid.get_hexagon_by_coord(*((p + coord) * 10)) for h, p in zip(hexes, np.array(points)) if h]
-        for h in hexs:
-            h.flag = 1
+            hexs = [self.hex_grid.get_hexagon_by_coord(*((p + coord) * 10)) for h, p in zip(hexes, np.array(points)) if h]
+            for h in hexs:
+                h.flag = 1
 
-        for h in self.hex_grid.hexs:
-            h.color = 0
+            for h in self.hex_grid.hexs:
+                h.color = 0
 
-        components = []
+            components = []
 
-        colors = {}
-        for index, player in enumerate(self.config['players']):
-            q, r = player['coords']
-            components.append(self.hex_grid.bfs(self.hex_grid[q, r]))
-            for h in components[-1]:
-                colors[h] = len(components)
-                self.config['players'][index]['components'].append([h.q, h.r])
+            colors = {}
+            for index, player in enumerate(self.config['players']):
+                q, r = player['coords']
+                components.append(self.hex_grid.bfs(self.hex_grid[q, r]))
+                for h in components[-1]:
+                    colors[h] = len(components)
+                    self.config['players'][index]['components'].append([h.q, h.r])
 
-        # return self
+            # return self
 
-        hexes = [colors.get(self.hex_grid.get_hexagon_by_coord(*((p + coord) * 10)), 0) for h, p in zip(hexes, np.array(points))]
+            hexes = [colors.get(self.hex_grid.get_hexagon_by_coord(*((p + coord) * 10)), 0) for h, p in zip(hexes, np.array(points))]
 
-        arucos = detection.detect_aruco(gray)
-        return detection.DetectionStages(
-            image=image, arucos=arucos,
-            pts_origin=pts_origin, crop=crop, corrected=corrected,
-            illumination_mask=illumination_mask, hexes=hexes,
-            r=50, points=points, orientation='pointy', transform=transform_matrix
-        )
+            arucos = detection.detect_aruco(gray)
+            return detection.DetectionStages(
+                image=image, arucos=arucos,
+                pts_origin=pts_origin, crop=crop, corrected=corrected,
+                illumination_mask=illumination_mask, hexes=hexes,
+                r=50, points=points, orientation='pointy', transform=transform_matrix
+            )
+        except:
+            raise ImageProcessingException
 
     def generate_game_field(self, path):
         render_page(self.config, self.encode_string(self.config, self.url, self.uuid), output_name=path)
