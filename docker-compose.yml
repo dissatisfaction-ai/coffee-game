@@ -1,0 +1,60 @@
+version: '3.8'
+
+networks:
+  monitoring:
+    driver: bridge
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    user: "0"
+#    ports:
+#       - 9090:9090
+    volumes:
+       - ./prometheus/data/:/prometheus
+       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+       - '--config.file=/etc/prometheus/prometheus.yml'
+       - '--storage.tsdb.path=/prometheus'
+       - '--storage.tsdb.retention.time=365d'
+       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+       - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+       - monitoring
+
+  grafana:
+    image: grafana/grafana
+    user: "0"
+    container_name: grafana
+    hostname: grafana
+    restart: unless-stopped
+    ports:
+        - "3000:3000"
+    volumes:
+        - ./grafana/data/:/var/lib/grafana
+        - ./grafana/provisioning:/etc/grafana/provisioning
+        - ./grafana/public/maps:/usr/share/grafana/public/maps
+    networks:
+        - monitoring
+
+  db:
+    image: postgres:14.1-alpine
+    container_name: pgdb
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=great_password_from_the_env
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./db:/var/lib/postgresql/data
+  admin:
+    container_name: adminer
+    image: adminer
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - 8089:8080
