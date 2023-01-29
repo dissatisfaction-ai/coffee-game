@@ -1,10 +1,11 @@
-import numpy as np
-from cv2 import aruco
 import matplotlib.pyplot as plt
-from hexagons import HexagonsGrid
-from pdfrw import PageMerge, PdfReader, PdfWriter
-from fpdf import FPDF, HTMLMixin
+import numpy as np
 import qrcode
+from cv2 import aruco
+from fpdf import FPDF, HTMLMixin
+from pdfrw import PageMerge, PdfReader, PdfWriter
+
+from hexagons import HexagonsGrid
 
 # global documents param
 h = 297  # height in mm
