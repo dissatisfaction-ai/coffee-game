@@ -8,7 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import cross_origin, CORS
 from datetime import datetime
 from uuid import uuid4
-from PIL import Image
+import PIL
 
 from coffeegame import CoffeeGame
 import matplotlib
@@ -16,15 +16,13 @@ import matplotlib
 matplotlib.use('Agg')
 
 app = Flask(__name__, static_folder='static')
-# app.config['SQLALCHEMY_DATABESE_URI'] = "sqlite:///coffee_game.sqlite3"
-# app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:299792458@pgdb:5432/coffee_game"
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:299792458@localhost:5432/coffee_game"
 
 cors = CORS(app)
 # metrics = PrometheusMetrics(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-url = "localhost:5000/upload"
+url = "http://localhost:5000"
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 
@@ -86,7 +84,7 @@ def create_game():
 
     return jsonify({
         "id": game.id,
-        "url": f"localhost:5000/static/pdf/{game.pdf}",
+        "url": f"{url}/static/pdf/{game.pdf}",
         "date": game.date
     })
 
@@ -98,11 +96,48 @@ def upload_image():
     for f in request.files:
         file = request.files[f]
 
-    # app.root_path, 'static/customlogos/logo.png'
+    if file is None:
+        return jsonify({
+            "error": "true",
+            "message": "file not attached"
+        })
 
-    if file:
-        img = Image.open(request.files['file'].stream)
+    try:
+        cg = CoffeeGame()
+        _ = cg.proceed_image(file.stream)
+    except Exception as e:
+        return jsonify({
+            "error": "true",
+            "message": str(e)
+        })
 
-        return {
-            "results": "results"
-        }
+    uuid = cg.uuid
+
+    try:
+        game = Game.query.filter_by(uuid=uuid).first()
+    except Exception as e:
+        return jsonify({
+            "error": "true",
+            "message": "Game not found"
+        })
+
+    stats = cg.get_number_of_cups()
+    state_path = f"static/tmp/states/{uuid4().hex}.png"
+    image_path = f"static/images/{uuid4().hex}.png"
+
+    cg.draw_current_state(save=state_path)
+    PIL.Image.open(file.stream).save(image_path)
+
+    image_entry = Image(
+        game=game,
+        image=image_path.split("/")[-1],
+        config=cg.config
+    )
+
+    db.session.add(image_entry)
+    db.session.commit()
+
+    return jsonify({
+        "statistics": stats,
+        "state_image": f"{url}/{state_path}"
+    })

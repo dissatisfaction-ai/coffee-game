@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Union
 
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import zbarlight
@@ -12,6 +11,7 @@ from hexagons import HexagonsGrid
 from page_layout_render import render_page
 
 from exceptions import ImageLoadingException, ImageProcessingException, QRNotFoundException, QRCodeIncorrectException
+
 
 class CoffeeGame:
     def __init__(self, players=(), orientation='pointy', grid_size=5, url='', uuid='', random_state=42):
@@ -84,7 +84,6 @@ class CoffeeGame:
         except:
             raise QRCodeIncorrectException
 
-        
         image = np.array(image)
 
         if image.shape[0] < image.shape[1]:
@@ -143,7 +142,7 @@ class CoffeeGame:
         for player in self.config['players']:
             player['name'] = players.get(player['name'], player['name'])
 
-    def draw_current_state(self):
+    def draw_current_state(self, save=None):
         plt.figure(figsize=(10, 10))
         self.hex_grid.draw(color='black', alpha=0.1)
         for index, player in enumerate(self.config['players']):
@@ -157,6 +156,9 @@ class CoffeeGame:
         plt.axis('equal')
         plt.axis('off')
         plt.gca().invert_yaxis()
+
+        if save:
+            plt.savefig(save, dpi=300, bbox_inches='tight')
 
     def get_number_of_cups(self):
         return [{
@@ -180,7 +182,7 @@ class CoffeeGame:
         return f"{url}?{s}"
 
     @staticmethod
-    def decode_string(s: str) -> dict:
+    def decode_string(s: str) -> tuple:
         url = s.split("?")[0]
         uuid = s.split("?")[-1].split("&")[0].split("=")[-1]
         s = "&".join(s.split("?")[-1].split("&")[1:])
