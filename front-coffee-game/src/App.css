@@ -1,0 +1,167 @@
+@font-face {
+  font-family: 'Monolith Light';
+  src: url('../public/fonts/Monolith Light.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Monolith';
+  src: url('../public/fonts/Monolith.ttf') format('truetype');
+}
+
+a {
+  color: #7A3A23;
+  font-weight: regular;
+  text-decoration: underline;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+  height: 100vh;
+  overflow-x: hidden;
+}
+
+.Logo {
+  position: absolute;
+  top: 3%;
+  left: 50%;
+  transform: translate(-50%, 0%);
+  z-index: 9;
+  width:100px;
+  transition: filter 0.5s ease-out;
+}
+
+.App.expanded .TopSection{
+  flex: 0.15;
+}
+.App.expanded .MiddleSection{
+  flex: 5;
+}
+.App.expanded .BottomSection{
+  flex: 1;
+}
+.App.expanded .Logo{
+  filter: invert(1);
+}
+
+.TopSection {
+  position: relative;
+  flex: 3;
+  background-color: #f3e2cb;
+  transition: flex 0.5s ease-out;
+}
+
+.MiddleSection {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 100%;
+  margin-right: 20px;
+  margin-left: 20px;
+  transition: flex 0.5s ease-out;
+}
+
+.TextContainer {
+  height:100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  
+}
+
+.Title {
+  font-family: Monolith Light;
+  text-align: center;
+  margin-top: 100px;
+  font-size: 2em;
+  font-weight: bold;
+  z-index: 2;
+}
+
+.Line {
+  width: 80%;
+  margin: 10px 0;
+  border: 0.5px solid #333;
+  position: absolute;
+}
+
+.Line:first-of-type {
+  top: 5%;
+}
+
+.Line:last-of-type {
+  bottom: 5%;
+}
+
+.Text {
+  font-family: Monolith;
+  text-align: center;
+  margin-bottom: 5%;
+  margin-top: 5%;
+}
+
+.BottomSection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: flex 0.5s ease-out;
+}
+
+.ButtonContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.ActionButton {
+  margin: 5px 0;
+  padding: 15px;
+  font-size: 1.2em;
+  border-radius: 20px;
+  width: 150%;
+  background-color: #fff;
+  border-color: #7A3A23;
+  color: #7A3A23;
+  border: 3;
+  font-family: Monolith;
+  transition: all 0.5s ease-out;
+}
+
+.ActionButton:hover {
+  background-color: #7A3A23;
+  color: #fff;
+
+}
+
+.CastleSVG {
+  position: absolute;
+  bottom: 0;
+  left: -120px;
+  right: 0;
+  margin: -110px auto;
+  display: block;
+  width: 600px;
+  height: auto;
+  z-index: 1;
+}
+
+.TopStainSVG{
+  position: absolute;
+  mix-blend-mode: multiply;
+  bottom: 0;
+  left: -280px;
+  right: 0;
+  margin: -210px auto;
+  display: block;
+  width: 700px;
+  height: auto;
+  z-index: 0;
+}
