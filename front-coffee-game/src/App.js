@@ -9,16 +9,20 @@ function App() {
   const [currentState, setCurrentState] = useState(0);
 
   const [imageFile, setImageFile] = useState(null);
+  const [isImageFilePicked, setIsImageFilePicked] = useState(false);
 
-  const [analysedData, setAnalysedData] = useState({
-    "state_image":"9dc9609ffce14851812ed15aa4fb8437.png",
-    "statistics": [
-      { "cups": 10, "name": "Gleb" },
-      { "cups": 17, "name": "Art1m" },
-      { "cups": 0, "name": "Art0m" },
-      { "cups": 0, "name": "Moritz" }
+
+
+  // const [analysedData, setAnalysedData] = useState({
+  //   "state_image":"9dc9609ffce14851812ed15aa4fb8437.png",
+  //   "statistics": [
+  //     { "cups": 10, "name": "Gleb" },
+  //     { "cups": 17, "name": "Art1m" },
+  //     { "cups": 0, "name": "Art0m" },
+  //     { "cups": 0, "name": "Moritz" }
     
-    ]  });
+  //   ]  });
+  // questionable solution
 
   
 
@@ -59,10 +63,11 @@ const drawState0 = () => {
   setText(<p>The rules of the game are simple. Once you’ve finished your cup of coffee,
     cross the tile on the board. Take a photo and upload here 
     to see the results. Reed complete rules <a onClick={handleRuleLinkClick}>here</a></p>);
-  setTitle('The Coffee Game')
-  setButton1Text('EXISTING GAME')
-  setButton2Text('START NEW')
-  setButton3Text('')
+  setTitle('The Coffee Game');
+  setButton1Text('EXISTING GAME');
+  setButton2Text('START NEW');
+  setButton3Text('');
+  setIsImageFilePicked(false);
 }
 
 const drawState1 = () => {
@@ -70,10 +75,10 @@ const drawState1 = () => {
   setCurrentState(1);
 
   setText(<p>Now please upload the photo of the current game image.</p>);
-  setTitle('Load Current Game')
-  setButton1Text('LOAD IMAGE')
-  setButton2Text('UPLOAD')
-  setButton3Text('RETURN')
+  setTitle('Load Current Game');
+  setButton1Text('LOAD IMAGE');
+  setButton2Text('UPLOAD');
+  setButton3Text('RETURN');
 
 
 }
@@ -93,7 +98,7 @@ const drawState3 = () => {
   setIsExpanded(true);
   setCurrentState(3);
 
-  const sortedJson = analysedData.statistics.sort((a, b) => b.cups - a.cups);
+  const sortedJson = window.analysedData.statistics.sort((a, b) => b.cups - a.cups);
   
   let html = '<div class="leaderboard">';
 
@@ -155,8 +160,7 @@ const drawState3 = () => {
 const drawState4 = () => {
   setIsExpanded(true);
   setCurrentState(4);
-
-  setText(<img src = {analysedData.state_image} width="100%" height="100%" />);
+  setText(<img src = {window.analysedData.overlay_image} width="80%" height="80%" />);
   setTitle('Segmented Map')
   setButton1Text('VIEW STATS')
   setButton2Text('DOWNLOAD IMAGE')
@@ -167,8 +171,35 @@ const drawState4 = () => {
 
 // special buttons
 
+
+const handleSubmission = () => {
+  const formData = new FormData();
+
+  formData.append('File', imageFile);
+
+  fetch(
+    'http://192.168.0.10:5000/upload_image',
+    {
+      method: 'POST',
+      body: formData,
+    }
+  )
+    .then((response) => response.json()
+      // setAnalysedData(response.json());
+      // drawState3();
+    )
+    .then((result) => {
+      console.log('Success:', result);
+      window.analysedData = result;
+      drawState3();})
+    .catch((error) => {
+      console.error('Error:', error);
+    });
+  };
+
   const handleFileInputChange = (event) => {
     setImageFile(event.target.files[0]);
+    setIsImageFilePicked(true);
   };
 
   const handleUploadButtonClick = () => {
@@ -177,10 +208,12 @@ const drawState4 = () => {
 
     // Simulate a click event on the file input element
     inputElement.click();
+
+    
   };
 
   const handleDownloadStatsButtonClick = () => {
-    const csvData = analysedData.statistics.map(row => Object.values(row).join(",")).join("\n");
+    const csvData = window.analysedData.statistics.map(row => Object.values(row).join(",")).join("\n");
     const csvBlob = new Blob([csvData], { type: "text/csv" });
     const csvURL = URL.createObjectURL(csvBlob);
     const a = document.createElement("a");
@@ -191,8 +224,8 @@ const drawState4 = () => {
 
   const handleDownloadImageButtonClick = () => {
     const a = document.createElement("a");
-    a.href = analysedData.state_image;
-    a.download = analysedData.state_image;
+    a.href = window.analysedData.overlay_image;
+    a.download = window.analysedData.overlay_image;
     a.click();
   };
 
@@ -219,7 +252,8 @@ const drawState4 = () => {
       drawState2();
     } else if (currentState == 1){
       // should upload image and get respose, currently only a placeholder
-      drawState3();
+      handleSubmission();
+      // drawState3();
     } else if (currentState == 2){
       // should go back
       drawState0();
@@ -289,3 +323,4 @@ const drawState4 = () => {
 }
 
 export default App;
+
