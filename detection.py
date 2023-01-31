@@ -194,7 +194,7 @@ class DetectionStages:
     orientation: str
     transform: np.ndarray
 
-    def plot_decoding_debug(self):
+    def plot_decoding_debug(self) -> None:
         fig, axs = plt.subplots(1, 5, figsize=(20, 4))
         axs = axs.flatten()
         show_aruco(self.image, self.arucos, ax=axs[0])
@@ -203,7 +203,7 @@ class DetectionStages:
         axs[3].imshow(self.illumination_mask)
         plot_hexes_by_class(self.corrected, self.points, self.hexes, r=self.r, ax=axs[4], orientation=self.orientation)
 
-    def plot_result(self, skip_empty=False, binary=True, alpha=0.25, show_image=True):
+    def plot_result(self, skip_empty=False, binary=True, alpha=0.25, show_image=True) -> None:
         hexes = self.hexes
         if binary:
             hexes = [bool(i) for i in hexes]
@@ -212,3 +212,24 @@ class DetectionStages:
             image = self.corrected
         plot_hexes_by_class(image, self.points, hexes, r=self.r,
                             orientation=self.orientation, skip_empty=skip_empty, alpha=0.25)
+
+    def plot_image_overlay(self, cropped=True, hex_scale=1):
+        if cropped:
+            poits = self.points
+            image = cv2.warpPerspective(self.image, self.transform, [4000, 4000])
+            shape = self.crop.shape
+        if not cropped:
+            poits = cv2.perspectiveTransform(np.array([self.points], dtype=np.float32), np.linalg.inv(self.transform))[0]
+            image = self.image
+            shape = image.shape
+        fig, ax = plt.subplots(figsize=(12, 12))
+        plot_hexes_by_class(None, poits, self.hexes, r=self.r * hex_scale,
+                                    orientation=self.orientation, skip_empty=True, alpha=0.25, ax=ax)
+        ax.imshow(image, alpha=1)
+        ax.set_xlim(0, shape[1])
+        ax.set_ylim(0, shape[0])
+
+        ax.invert_yaxis()
+        ax.axis('off')
+
+        return fig

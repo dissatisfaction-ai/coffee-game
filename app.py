@@ -1,19 +1,33 @@
-import numpy as np
-import pandas as pd
+from datetime import datetime
+from time import perf_counter
+from uuid import uuid4
+
+import PIL
 from flask import Flask, request
 from flask.json import jsonify
-from flask_cors import cross_origin
+from flask_cors import CORS, cross_origin
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import cross_origin, CORS
-from datetime import datetime
-from uuid import uuid4
-import PIL
 
 from coffeegame import CoffeeGame
-import matplotlib
 
+import matplotlib
 matplotlib.use('Agg')
+
+
+class catchtime:
+    def __init__(self, name=None):
+        self.name = name
+
+    def __enter__(self):
+        self.time = perf_counter()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.time = perf_counter() - self.time
+        self.readout = f"{self.time:.2f}s - {self.name}"
+        print(self.readout)
+
 
 app = Flask(__name__, static_folder='static')
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:299792458@localhost:5432/coffee_game"
@@ -22,7 +36,8 @@ cors = CORS(app)
 # metrics = PrometheusMetrics(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-url = "http://localhost:5000"
+# url = "http://localhost:5000"
+url = "http://192.168.0.10:5000"
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 
@@ -51,7 +66,6 @@ class Image(db.Model):
 @cross_origin()
 def create_game():
     request_json = request.get_json()
-    print("kek")
     players = request_json.get("players")
     random_state = request_json.get('random_state', 42)
     orientation = request_json.get('orientation', 'pointy')
@@ -80,8 +94,6 @@ def create_game():
     db.session.add(game)
     db.session.commit()
 
-    print(game.id)
-
     return jsonify({
         "id": game.id,
         "url": f"{url}/static/pdf/{game.pdf}",
@@ -104,8 +116,10 @@ def upload_image():
 
     try:
         cg = CoffeeGame()
-        _ = cg.proceed_image(file.stream)
+        with catchtime('Image processing'):
+            detection_stages = cg.proceed_image(file.stream)
     except Exception as e:
+        print(str(e))
         return jsonify({
             "error": "true",
             "message": str(e)
@@ -113,31 +127,43 @@ def upload_image():
 
     uuid = cg.uuid
 
-    try:
-        game = Game.query.filter_by(uuid=uuid).first()
-    except Exception as e:
-        return jsonify({
-            "error": "true",
-            "message": "Game not found"
-        })
+    # try:
+    #     game = Game.query.filter_by(uuid=uuid).first()
+    # except Exception as e:
+    #     return jsonify({
+    #         "error": "true",
+    #         "message": "Game not found"
+    #     })
 
     stats = cg.get_number_of_cups()
-    state_path = f"static/tmp/states/{uuid4().hex}.png"
-    image_path = f"static/images/{uuid4().hex}.png"
+    state_path = f"static/tmp/states/{uuid4().hex}.jpg"
+    overlay_path = f"static/tmp/states/{uuid4().hex}_overlay.jpg"
+    image_path = f"static/images/{uuid4().hex}.jpg"
 
-    cg.draw_current_state(save=state_path)
-    PIL.Image.open(file.stream).save(image_path)
 
-    image_entry = Image(
-        game=game,
-        image=image_path.split("/")[-1],
-        config=cg.config
-    )
+    # Do not save to save time
 
-    db.session.add(image_entry)
-    db.session.commit()
+    # with catchtime('Saving current state'):
+    #     cg.draw_current_state(save=state_path)
+
+    with catchtime('Ploting overlay'):
+        fig_overlay = detection_stages.plot_image_overlay()
+    with catchtime('Saving overlay'):
+        fig_overlay.savefig(overlay_path, bbox_inches='tight', pad_inches=0.0, dpi=100)
+    with catchtime('Saving initial image'):
+        PIL.Image.open(file.stream).save(image_path)
+
+    # image_entry = Image(
+    #     game=game,
+    #     image=image_path.split("/")[-1],
+    #     config=cg.config
+    # )
+
+    # db.session.add(image_entry)
+    # db.session.commit()
 
     return jsonify({
         "statistics": stats,
-        "state_image": f"{url}/{state_path}"
+        # "state_image": f"{url}/{state_path}",
+        "overlay_image": f"{url}/{overlay_path}"
     })
