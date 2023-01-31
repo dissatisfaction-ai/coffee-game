@@ -140,8 +140,12 @@ def upload_image():
     overlay_path = f"static/tmp/states/{uuid4().hex}_overlay.jpg"
     image_path = f"static/images/{uuid4().hex}.jpg"
 
-    with catchtime('Saving current state'):
-        cg.draw_current_state(save=state_path)
+
+    # Do not save to save time
+
+    # with catchtime('Saving current state'):
+    #     cg.draw_current_state(save=state_path)
+
     with catchtime('Ploting overlay'):
         fig_overlay = detection_stages.plot_image_overlay()
     with catchtime('Saving overlay'):
@@ -160,6 +164,6 @@ def upload_image():
 
     return jsonify({
         "statistics": stats,
-        "state_image": f"{url}/{state_path}",
+        # "state_image": f"{url}/{state_path}",
         "overlay_image": f"{url}/{overlay_path}"
     })

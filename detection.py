@@ -194,7 +194,7 @@ class DetectionStages:
     orientation: str
     transform: np.ndarray
 
-    def plot_decoding_debug(self):
+    def plot_decoding_debug(self) -> None:
         fig, axs = plt.subplots(1, 5, figsize=(20, 4))
         axs = axs.flatten()
         show_aruco(self.image, self.arucos, ax=axs[0])
@@ -203,7 +203,7 @@ class DetectionStages:
         axs[3].imshow(self.illumination_mask)
         plot_hexes_by_class(self.corrected, self.points, self.hexes, r=self.r, ax=axs[4], orientation=self.orientation)
 
-    def plot_result(self, skip_empty=False, binary=True, alpha=0.25, show_image=True):
+    def plot_result(self, skip_empty=False, binary=True, alpha=0.25, show_image=True) -> None:
         hexes = self.hexes
         if binary:
             hexes = [bool(i) for i in hexes]
