@@ -10,6 +10,16 @@ function App() {
 
   const [imageFile, setImageFile] = useState(null);
 
+  const [analysedData, setAnalysedData] = useState({
+    "state_image":"9dc9609ffce14851812ed15aa4fb8437.png",
+    "statistics": [
+      { "cups": 10, "name": "Gleb" },
+      { "cups": 17, "name": "Art1m" },
+      { "cups": 0, "name": "Art0m" },
+      { "cups": 0, "name": "Moritz" }
+    
+    ]  });
+
   
 
 // state 0 is initial; state 1 is loading 
@@ -83,16 +93,7 @@ const drawState3 = () => {
   setIsExpanded(true);
   setCurrentState(3);
 
-  const json = {
-    "statistics": [
-      { "cups": 10, "name": "Gleb" },
-      { "cups": 17, "name": "Art1m" },
-      { "cups": 0, "name": "Art0m" },
-      { "cups": 0, "name": "Moritz" }
-    ]
-  };
-  
-  const sortedJson = json.statistics.sort((a, b) => b.cups - a.cups);
+  const sortedJson = analysedData.statistics.sort((a, b) => b.cups - a.cups);
   
   let html = '<div class="leaderboard">';
 
@@ -109,7 +110,7 @@ const drawState3 = () => {
     }
 
     let svg_hex = `
-    <svg viewBox="0 0 64.89 60.18">
+    <svg widht="50" height="50" viewBox="0 0 64.89 60.18">
     <defs>
       <style>
         .cls-${i} {
@@ -144,10 +145,23 @@ const drawState3 = () => {
   var parse = require('html-react-parser');
 
   setText(parse(html));
-  setTitle('Load Current Game')
-  setButton1Text('LOAD IMAGE')
-  setButton2Text('RETURN')
-  setButton3Text('')
+  setTitle('Leaderboard')
+  setButton1Text('VIEW MAP')
+  setButton2Text('DOWNLOAD STATS')
+  setButton3Text('RETURN')
+
+}
+
+const drawState4 = () => {
+  setIsExpanded(true);
+  setCurrentState(4);
+
+  setText(<img src = {analysedData.state_image} width="100%" height="100%" />);
+  setTitle('Segmented Map')
+  setButton1Text('VIEW STATS')
+  setButton2Text('DOWNLOAD IMAGE')
+  setButton3Text('RETURN')
+
 
 }
 
@@ -165,6 +179,23 @@ const drawState3 = () => {
     inputElement.click();
   };
 
+  const handleDownloadStatsButtonClick = () => {
+    const csvData = analysedData.statistics.map(row => Object.values(row).join(",")).join("\n");
+    const csvBlob = new Blob([csvData], { type: "text/csv" });
+    const csvURL = URL.createObjectURL(csvBlob);
+    const a = document.createElement("a");
+    a.href = csvURL;
+    a.download = "data.csv";
+    a.click();
+  };
+
+  const handleDownloadImageButtonClick = () => {
+    const a = document.createElement("a");
+    a.href = analysedData.state_image;
+    a.download = analysedData.state_image;
+    a.click();
+  };
+
 
 // logic for buttons 
   const handleLogicButton1Click = () => {
@@ -172,24 +203,43 @@ const drawState3 = () => {
       // should be EXISTING GAME
       drawState1();
     } else if (currentState == 1) {
-      handleUploadButtonClick()
+      handleUploadButtonClick();
+    } else if (currentState == 2) {
+      handleUploadButtonClick();
+    } else if (currentState == 3) {
+      drawState4();
+    } else if (currentState == 4) {
+      drawState3();
     }
   };
 
   const handleLogicButton2Click = () => {
-  if (currentState == 0){
-    // should be START NEW
-    drawState2();
-  } else if (currentState == 1){
-    // should go back
-    drawState3();
-  } else if (currentState == 2){
-    // should go back
-    drawState0();}
+    if (currentState == 0){
+      // should be START NEW
+      drawState2();
+    } else if (currentState == 1){
+      // should upload image and get respose, currently only a placeholder
+      drawState3();
+    } else if (currentState == 2){
+      // should go back
+      drawState0();
+    } else if (currentState == 3){
+      // should download statistics
+      handleDownloadStatsButtonClick();
+    } else if (currentState == 4){
+      // should download statistics
+      handleDownloadImageButtonClick();
+    }
   };
 
   const handleLogicButton3Click = () => {
     if (currentState == 1){
+      // should go back
+      drawState0();
+    } else if (currentState == 3){
+      // should go back
+      drawState0();
+    } else if (currentState == 4){
       // should go back
       drawState0();
     }
