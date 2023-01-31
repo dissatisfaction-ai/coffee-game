@@ -9,6 +9,7 @@ from PIL import Image
 import detection
 from hexagons import HexagonsGrid
 from page_layout_render import render_page
+import cv2 
 
 from exceptions import ImageLoadingException, ImageProcessingException, QRNotFoundException, QRCodeIncorrectException
 
@@ -66,13 +67,17 @@ class CoffeeGame:
 
     def proceed_image(self, image_path: Union[str, Path]):
         try:
-            image = Image.open(image_path)
+            image = Image.open(image_path).convert('RGB')
+            if max(image.size) > 2000:
+                image = image.resize((int(image.size[0] * 2000 / max(image.size)),
+                                      int(image.size[1] * 2000 / max(image.size))))
         except:
             raise ImageLoadingException
 
         try:
             qr_code_value = zbarlight.scan_codes(['qrcode'], image)[0].decode('utf-8')
-        except:
+        except Exception as e:
+            print(e)
             raise QRNotFoundException
 
         try:
@@ -121,7 +126,6 @@ class CoffeeGame:
                     colors[h] = len(components)
                     self.config['players'][index]['components'].append([h.q, h.r])
 
-            # return self
 
             hexes = [colors.get(self.hex_grid.get_hexagon_by_coord(*((p + coord) * 10)), 0) for h, p in zip(hexes, np.array(points))]
 
@@ -143,7 +147,7 @@ class CoffeeGame:
             player['name'] = players.get(player['name'], player['name'])
 
     def draw_current_state(self, save=None):
-        plt.figure(figsize=(10, 10))
+        fig, ax = plt.subplots(figsize=(10, 10))
         self.hex_grid.draw(color='black', alpha=0.1)
         for index, player in enumerate(self.config['players']):
             c = [self.hex_grid[q, r] for q, r in player['components']]
@@ -151,14 +155,14 @@ class CoffeeGame:
             self.hex_grid.draw_crosses(c, color='black', alpha=0.4)
 
             x, y = c[0].get_center()
-            plt.text(x, y, player['name'], ha='center', va='center')
+            ax.text(x, y, player['name'], ha='center', va='center')
 
-        plt.axis('equal')
-        plt.axis('off')
-        plt.gca().invert_yaxis()
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.invert_yaxis()
 
         if save:
-            plt.savefig(save, dpi=300, bbox_inches='tight')
+            fig.savefig(save, dpi=100, bbox_inches='tight')
 
     def get_number_of_cups(self):
         return [{
