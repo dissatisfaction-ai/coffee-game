@@ -36,7 +36,7 @@ function App() {
           <p>Convoluted rules. Return back <a onClick={handleRuleLinkClick}>here</a></p> : 
           <p>The rules of the game are simple. Once you’ve finished your cup of coffee,
             cross the tile on the board. Take a photo and upload here 
-            to see the results. Reed complete rules <a onClick={handleRuleLinkClick}>here</a></p>
+            to see the results. Read complete rules <a onClick={handleRuleLinkClick}>here</a></p>
       );
       return !prevExpanded
     });
@@ -67,7 +67,7 @@ const drawState0 = () => {
   setButton1Text('EXISTING GAME');
   setButton2Text('START NEW');
   setButton3Text('');
-  setIsImageFilePicked(false);
+  // setIsImageFilePicked(false);
 }
 
 const drawState1 = () => {
@@ -87,7 +87,7 @@ const drawState2 = () => {
   setIsExpanded(true);
   setCurrentState(2);
 
-  setText(<p>Please, select initial parameters:</p>);
+  setText(<p>This section is not implemented yet. Wait for the v1.0 release.</p>);
   setTitle('Create New Game')
   setButton1Text('NEXT')
   setButton2Text('RETURN')
@@ -160,7 +160,7 @@ const drawState3 = () => {
 const drawState4 = () => {
   setIsExpanded(true);
   setCurrentState(4);
-  setText(<img src = {window.analysedData.overlay_image} width="80%" height="80%" />);
+  setText(<img src = {window.analysedData.overlay_image} className="DisplayImage" />);
   setTitle('Segmented Map')
   setButton1Text('VIEW STATS')
   setButton2Text('DOWNLOAD IMAGE')
@@ -173,29 +173,38 @@ const drawState4 = () => {
 
 
 const handleSubmission = () => {
-  const formData = new FormData();
 
-  formData.append('File', imageFile);
+  if (isImageFilePicked){
 
-  fetch(
-    'http://192.168.0.10:5000/upload_image',
-    {
-      method: 'POST',
-      body: formData,
-    }
-  )
-    .then((response) => response.json()
-      // setAnalysedData(response.json());
-      // drawState3();
+    setText('Processing image, please stand by...')
+
+    const formData = new FormData();
+
+    formData.append('File', imageFile);
+
+    fetch(
+      'http://192.168.0.10:5000/upload_image',
+      {
+        method: 'POST',
+        body: formData,
+      }
     )
-    .then((result) => {
-      console.log('Success:', result);
-      window.analysedData = result;
-      drawState3();})
-    .catch((error) => {
-      console.error('Error:', error);
-    });
-  };
+      .then((response) => response.json()
+        // setAnalysedData(response.json());
+        // drawState3();
+      )
+      .then((result) => {
+        console.log('Success:', result);
+        window.analysedData = result;
+        drawState3();})
+      .catch((error) => {
+        setText('Something went wrong, contact developers...')
+        console.error('Error:', error);
+      });
+  } else {
+    setText('Please choose the file')
+  }
+};
 
   const handleFileInputChange = (event) => {
     setImageFile(event.target.files[0]);
@@ -208,6 +217,7 @@ const handleSubmission = () => {
 
     // Simulate a click event on the file input element
     inputElement.click();
+    setText(<p>Now please upload the photo of the current game image.</p>);
 
     
   };
