@@ -180,3 +180,62 @@ a {
   height: auto;
   z-index: 0;
 }
+
+
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 250px;
+  max-height: 300px;
+  overflow-y: scroll;
+}
+
+.leaderboard__item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80%;
+  margin-top: 10px;
+}
+
+.leaderboard__position {
+  font-weight: bold;
+  font-size: 20px;
+  margin-right: 10px;
+  min-width: 15px;
+}
+
+.leaderboard__name {
+  font-size: 16px;
+  font-weight: bold;
+  background-image: url('../public/svgs/name_hex.svg');
+  background-repeat: no-repeat;
+  /* background-size: cover; */
+  width: 220px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 6px;
+  text-align: center;
+}
+
+.leaderboard__score {
+  /* background-image: url('../public/svgs/score_hex.svg'); */
+  fill: gold;
+  background-repeat: no-repeat;
+  /* background-size: cover; */
+  width: 60px;
+  height: 45px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  font-weight: bold;
+  /* position: absolute; */
+  top: 0;
+  z-index: -1;
+  text-align: center;
+  position: relative;
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 251.62 58.08">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #f3e2cb;
+        stroke: #7a3a23;
+        stroke-miterlimit: 10;
+      }
+    </style>
+  </defs>
+  <g id="Layer_3" data-name="Layer 3">
+    <path class="cls-1" d="M229.01,.5H22.62c-4.77,0-9.18,2.54-11.56,6.67L2.29,22.37C-.1,26.5-.1,31.58,2.29,35.71l8.77,15.19c2.38,4.13,6.79,6.67,11.56,6.67H229.01c4.77,0,9.18-2.54,11.56-6.67l8.77-15.19c2.38-4.13,2.38-9.22,0-13.35l-8.77-15.19c-2.38-4.13-6.79-6.67-11.56-6.67Z"/>
+  </g>
+</svg>
