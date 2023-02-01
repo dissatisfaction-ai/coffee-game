@@ -170,5 +170,5 @@ def upload_image():
     return jsonify({
         "statistics": stats,
         # "state_image": f"{url}/{state_path}",
-        "overlay_image": f"{url}/{overlay_path}"
+        "overlay_image": f"{overlay_path[6:]}"
     })
