@@ -29,7 +29,6 @@ class catchtime:
         print(self.readout)
 
 
-
 app = Flask(__name__, static_folder='static', static_url_path='/')
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:299792458@localhost:5432/coffee_game"
 
