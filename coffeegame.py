@@ -68,17 +68,22 @@ class CoffeeGame:
     def proceed_image(self, image_path: Union[str, Path]):
         try:
             image = Image.open(image_path).convert('RGB')
-            if max(image.size) > 2000:
-                image = image.resize((int(image.size[0] * 2000 / max(image.size)),
-                                      int(image.size[1] * 2000 / max(image.size))))
-        except:
+            # if max(image.size) > 2000:
+            #     image = image.resize((int(image.size[0] * 2000 / max(image.size)),
+            #                           int(image.size[1] * 2000 / max(image.size))))
+        except Exception as e:
+            print(str(e))
             raise ImageLoadingException
 
         try:
             qr_code_value = zbarlight.scan_codes(['qrcode'], image)[0].decode('utf-8')
         except Exception as e:
             print(e)
-            raise QRNotFoundException
+            try: 
+                qrCodeDetector = cv2.QRCodeDetector()
+                qr_code_value, _, _ = qrCodeDetector.detectAndDecode(np.array(image))
+            except Exception as e:
+                raise QRNotFoundException
 
         try:
             config, url, uuid = self.decode_string(qr_code_value)
@@ -86,7 +91,8 @@ class CoffeeGame:
             self.url = url
             self.uuid = uuid
             self.load_config(config)
-        except:
+        except Exception as e:
+            print(str(e))
             raise QRCodeIncorrectException
 
         image = np.array(image)
@@ -136,7 +142,8 @@ class CoffeeGame:
                 illumination_mask=illumination_mask, hexes=hexes,
                 r=50, points=points, orientation='pointy', transform=transform_matrix
             )
-        except:
+        except Exception as e:
+            print(str(e))
             raise ImageProcessingException
 
     def generate_game_field(self, path):
