@@ -29,7 +29,8 @@ class catchtime:
         print(self.readout)
 
 
-app = Flask(__name__, static_folder='static')
+
+app = Flask(__name__, static_folder='static', static_url_path='/')
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:299792458@localhost:5432/coffee_game"
 
 cors = CORS(app)
@@ -37,7 +38,7 @@ cors = CORS(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 # url = "http://localhost:5000"
-url = "http://192.168.0.10:5000"
+url = 'coffee-game.ai'
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 
@@ -60,6 +61,11 @@ class Image(db.Model):
     image = db.Column(db.String)
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     config = db.Column(db.JSON)
+
+
+@app.route("/")
+def index():
+    return app.send_static_file('index.html')
 
 
 @app.route("/create_game", methods=['POST'])
