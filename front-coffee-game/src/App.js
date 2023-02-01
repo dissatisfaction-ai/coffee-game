@@ -183,7 +183,7 @@ const handleSubmission = () => {
     formData.append('File', imageFile);
 
     fetch(
-      'http://192.168.0.10:5000/upload_image',
+      '/upload_image',
       {
         method: 'POST',
         body: formData,
