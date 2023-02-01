@@ -33,7 +33,15 @@ function App() {
     console.log(isExpanded);
     setIsExpanded(prevExpanded => {
       setText(!prevExpanded ? 
-          <p>Convoluted rules. Return back <a onClick={handleRuleLinkClick}>here</a></p> : 
+        <div><p>This game is created to simplify accounting of coffee cups drunk by the lab members. On the fridge you will find a hexagonal field: </p>
+        <ol>
+          <li>Once you enjoyed your cup of coffee, put a cross next to the tile with your initials on it. <b>Keep your crosses connected but don't get closer than one tile away from the crosses of outher lab members!</b></li>
+          <p></p>
+          <li>To find out how many cups you have consumed, go the the "LOAD GAME" section and take a photo of the field ensuring that QR code is in the frame</li>
+          <p></p>
+          <li>This is the first alpha release. If the app breaks or you have a feature suggestion, let the developers know!</li>
+        </ol> 
+        <p>Return back <a onClick={handleRuleLinkClick}>here</a></p></div>: 
           <p>The rules of the game are simple. Once you’ve finished your cup of coffee,
             cross the tile on the board. Take a photo and upload here 
             to see the results. Read complete rules <a onClick={handleRuleLinkClick}>here</a></p>
@@ -198,7 +206,8 @@ const handleSubmission = () => {
         window.analysedData = result;
         drawState3();})
       .catch((error) => {
-        setText('Something went wrong, contact developers...')
+        drawState1();
+        setText('Something went wrong, contact developers...');
         console.error('Error:', error);
       });
   } else {
