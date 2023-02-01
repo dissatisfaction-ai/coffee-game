@@ -29,7 +29,6 @@ class catchtime:
         print(self.readout)
 
 
-
 app = Flask(__name__, static_folder='static', static_url_path='/')
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:299792458@localhost:5432/coffee_game"
 
@@ -37,7 +36,6 @@ cors = CORS(app)
 # metrics = PrometheusMetrics(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-# url = "http://localhost:5000"
 url = 'coffee-game.ai'
 app.config['CORS_HEADERS'] = 'Content-Type'
 
@@ -166,6 +164,6 @@ def upload_image():
 
     return jsonify({
         "statistics": stats,
-        "state_image": f"{url}/{state_path}",
-        "overlay_image": f"{url}/{overlay_path}"
+        "state_image": f"{state_path[6:]}",
+        "overlay_image": f"{overlay_path[6:]}"
     })
