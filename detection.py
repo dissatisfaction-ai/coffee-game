@@ -7,6 +7,81 @@ import numpy as np
 from cv2 import aruco
 from matplotlib.patches import RegularPolygon
 from scipy import ndimage
+import zbarlight
+
+from exceptions import QRNotFoundException
+
+
+def decode_qr(qr_image, full_image):
+    print("Trying to decode QR code from cropped image...")
+    try:
+        print('Using zbarlight...', end=' ')
+        qr_code_value = zbarlight.scan_codes(['qrcode'], qr_image)[0].decode('utf-8')
+    except:
+        print('FAILED')
+    else:
+        print('OK')
+        return qr_code_value
+
+    try: 
+        print('Using cv2...', end=' ')
+        qrCodeDetector = cv2.QRCodeDetector()
+        qr_code_value, _, _ = qrCodeDetector.detectAndDecode(np.array(qr_image))
+        assert qr_code_value != ''
+    except:
+        print('FAILED')
+    else:
+        print('OK')
+        return qr_code_value
+
+    print("Trying to decode QR code from full image...")
+
+    try:
+        print('Using zbarlight...', end=' ')
+        qr_code_value = zbarlight.scan_codes(['qrcode'], full_image)[0].decode('utf-8')
+    except:
+        print('FAILED')
+    else:
+        print('OK')
+        return qr_code_value
+
+    try: 
+        print('Using cv2...', end=' ')
+        qrCodeDetector = cv2.QRCodeDetector()
+        qr_code_value, _, _ = qrCodeDetector.detectAndDecode(np.array(full_image))
+        assert qr_code_value != ''
+    except:
+        print('FAILED')
+    else:
+        print('OK')
+        return qr_code_value
+
+    print("Trying to decode QR code from full image resized to 2000px...")
+
+    smaller_image = full_image.resize((int(full_image.size[0] * 2000 / max(full_image.size)),
+                            int(full_image.size[1] * 2000 / max(full_image.size))))
+
+    try:
+        print('Using zbarlight...', end=' ')
+        qr_code_value = zbarlight.scan_codes(['qrcode'], smaller_image)[0].decode('utf-8')
+    except:
+        print('FAILED')
+    else:
+        print('OK')
+        return qr_code_value
+
+    try: 
+        print('Using cv2...', end=' ')
+        qrCodeDetector = cv2.QRCodeDetector()
+        qr_code_value, _, _ = qrCodeDetector.detectAndDecode(np.array(smaller_image))
+        assert qr_code_value != ''
+    except:
+        print('FAILED')
+    else:
+        print('OK')
+        return qr_code_value
+
+    raise QRNotFoundException
 
 
 def detect_aruco(image: np.ndarray):
@@ -38,7 +113,7 @@ def show_aruco(image: np.ndarray, aruco_found: dict, ax=None):
     ax.legend()
 
 
-def apply_perspective(image: np.ndarray, points_origin: Union[list, np.ndarray], ids: list):
+def apply_perspective(image: np.ndarray, points_origin, ids: list, for_qr=False):
     aruco_found = detect_aruco(image)
 
     points_image = np.stack([aruco_found[ids[0]][0],
@@ -50,7 +125,12 @@ def apply_perspective(image: np.ndarray, points_origin: Union[list, np.ndarray],
     min_coord = points_origin.min(axis=0).astype(int)
     points_origin -= min_coord
     image_orig_size = points_origin.max(axis=0).astype(int)
-
+    
+        
+    if for_qr:
+        points_origin = points_origin[::-1]
+        image_orig_size = (image_orig_size * np.array([1, 1.22])).astype(int)
+    
     M = cv2.getPerspectiveTransform(points_image, points_origin)
     dst = cv2.warpPerspective(image, M, image_orig_size)
 
@@ -159,7 +239,7 @@ def plot_hexes_by_class(image, grid, hex_classes, r, orientation='flat', ax=None
         orientation = 0
 
     color_classes = ['blue', 'red', 'yellowgreen', 'purple', 'forestgreen',
-                     'darkorange', 'peru', 'gold', 'aqua', 'springgreen', 'firebrick']
+                     'darkorange', 'peru', 'gold', 'aqua', 'springgreen', 'firebrick'] * 2
 
     for h, (x, y) in zip(hex_classes, grid):
         if skip_empty and h == 0:

@@ -12,7 +12,9 @@ from flask_sqlalchemy import SQLAlchemy
 from coffeegame import CoffeeGame
 
 import matplotlib
+from matplotlib import pyplot as plt
 matplotlib.use('Agg')
+
 
 
 class catchtime:
@@ -155,6 +157,13 @@ def upload_image():
         fig_overlay = detection_stages.plot_image_overlay()
     with catchtime('Saving overlay'):
         fig_overlay.savefig(overlay_path, bbox_inches='tight', pad_inches=0.0, dpi=100)
+
+        fig_overlay.clf()
+        plt.close()
+        del fig_overlay
+        import gc
+        gc.collect()
+        
     with catchtime('Saving initial image'):
         PIL.Image.open(file.stream).save(image_path)
 
@@ -166,7 +175,6 @@ def upload_image():
 
     # db.session.add(image_entry)
     # db.session.commit()
-
     return jsonify({
         "statistics": stats,
         # "state_image": f"{url}/{state_path}",

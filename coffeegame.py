@@ -68,22 +68,20 @@ class CoffeeGame:
     def proceed_image(self, image_path: Union[str, Path]):
         try:
             image = Image.open(image_path).convert('RGB')
-            # if max(image.size) > 2000:
-            #     image = image.resize((int(image.size[0] * 2000 / max(image.size)),
-            #                           int(image.size[1] * 2000 / max(image.size))))
         except Exception as e:
             print(str(e))
             raise ImageLoadingException
 
         try:
-            qr_code_value = zbarlight.scan_codes(['qrcode'], image)[0].decode('utf-8')
-        except Exception as e:
-            print(e)
-            try: 
-                qrCodeDetector = cv2.QRCodeDetector()
-                qr_code_value, _, _ = qrCodeDetector.detectAndDecode(np.array(image))
-            except Exception as e:
-                raise QRNotFoundException
+            pts_origin = np.array([[5, 60], [205, 60], [5, 292], [205, 292]]) * 10
+            crop_with_qr, _, _ = detection.apply_perspective(np.array(image), pts_origin, [0, 1, 2, 3], for_qr=True)
+            qr_image = np.rot90(crop_with_qr, 2)[:480, 1500:]
+            qr_image = Image.fromarray(qr_image)
+        except:
+            raise ImageProcessingException
+
+
+        qr_code_value = detection.decode_qr(qr_image, image)
 
         try:
             config, url, uuid = self.decode_string(qr_code_value)
@@ -103,7 +101,7 @@ class CoffeeGame:
         # recognition
         try:
             image = detection.gamma_correction(image, gamma=0.5)
-            gray = image.mean(axis=2).astype(np.uint8)
+            gray = image.min(axis=2).astype(np.uint8)
 
             pts_origin = np.array([[5, 60], [205, 60], [5, 292], [205, 292]]) * 10
             crop, coord, transform_matrix = detection.apply_perspective(gray, pts_origin, [0, 1, 2, 3])

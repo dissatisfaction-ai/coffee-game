@@ -1,11 +1,11 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import qrcode
 from cv2 import aruco
-from fpdf import FPDF, HTMLMixin
-from pdfrw import PageMerge, PdfReader, PdfWriter
-
+import matplotlib.pyplot as plt
+from pathlib import Path
 from hexagons import HexagonsGrid
+from pdfrw import PageMerge, PdfReader, PdfWriter
+from fpdf import FPDF, HTMLMixin
+import qrcode
 
 # global documents param
 h = 297  # height in mm
@@ -85,6 +85,22 @@ def draw_markers(hex_grid, players, ax=None):
         plot_aruco(10, (center[0] / pf - participant_aruco_size / 2),
                    (center[1] / pf - participant_aruco_size / 2),
                    size=participant_aruco_size)
+        ax.fill(vertices[:, 0], vertices[:, 1], color='gainsboro', zorder=0)
+
+
+def draw_initials(hex_grid, players, ax=None):
+    if ax is None:
+        ax = plt.gca()
+
+    for p in players:
+        hex = hex_grid[p['coords'][0], p['coords'][1]]
+        center = hex.get_center()
+        vertices = np.array(hex.get_polygon(loop=True))
+        names = p['name'].split(' ')
+        name,  surname = names[0], names[-1]
+        initials = name[0] + surname[0]
+        ax.text(center[0] - 10, center[1] + 30, initials, color='grey', fontsize=16, 
+                ha='center', va='center', fontweight='bold', font="Courier")
         ax.fill(vertices[:, 0], vertices[:, 1], color='gainsboro', zorder=0)
 
 
@@ -168,8 +184,8 @@ def draw_qr(fpdf, qr_string):
     qr.add_data(qr_string)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
-    fpdf.image(img.get_image(), x=120 + 40, y=23,
-               w=35, h=35)
+    fpdf.image(img.get_image(), x=120 + 40, y=10,
+               w=45, h=45)
 
 
 def renger_field(config, output_name):
@@ -177,7 +193,7 @@ def renger_field(config, output_name):
     ax = fig.gca()
 
     hex_grid = create_hex_grid(grid_size=config['grid_size'], orientation=config['orientation'], ax=ax)
-    draw_markers(hex_grid, players=config['players'], ax=ax)
+    draw_initials(hex_grid, players=config['players'], ax=ax)
     draw_corner_aruco(ax)
     sanitise_figure(fig)
     fig.savefig(output_name, bbox_inches='tight', pad_inches=0.0)
