@@ -97,7 +97,7 @@ def create_game():
 
     return jsonify({
         "uuid": uuid,
-        "url": f"/static/pdf/{uuid}.pdf"
+        "url": f"/pdf/{uuid}.pdf"
     })
 
 
