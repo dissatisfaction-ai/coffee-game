@@ -3,26 +3,24 @@ from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-import zbarlight
 from PIL import Image
 
 import detection
 from hexagons import HexagonsGrid
 from page_layout_render import render_page
-import cv2 
+import cv2
 
-from exceptions import ImageLoadingException, ImageProcessingException, QRNotFoundException, QRCodeIncorrectException
+from exceptions import ImageLoadingException, ImageProcessingException, QRNotFoundException, \
+    QRCodeIncorrectException, PlayerArrangementException
 
 
 class CoffeeGame:
-    def __init__(self, players=(), orientation='pointy', grid_size=5, url='', uuid='', random_state=42):
+    def __init__(self, players=(), orientation='pointy', grid_size=5, url='', uuid='', random_state=None):
 
         self.hex_grid = self.create_grid(orientation=orientation, grid_size=grid_size)
         self.random_state = random_state
 
-        # TODO add random_state to generation
         coords = [[i.q, i.r] for i in self.generate_arrangement(len(players))]
-        # TODO add assert that there is no neighbors
         self.config = {
             "orientation": "pointy",  # flat
             "grid_size": grid_size,  # size of hex in mm
@@ -38,12 +36,16 @@ class CoffeeGame:
     def __len__(self):
         return len(self.hex_grid)
 
-    def generate_arrangement(self, n, threshold=4, border_dist=2):
+    def generate_arrangement(self, n, threshold=4, border_dist=2, max_attempts=1000):
         r = np.random.RandomState(self.random_state)
-        while True:
-            hexs = r.choice([h for h in self.hex_grid.hexs if h.border_dist >= border_dist], n, replace=False).tolist()
+        candidates = [h for h in self.hex_grid.hexs if h.border_dist >= border_dist]
+        if n > len(candidates):
+            raise PlayerArrangementException
+
+        for _ in range(max_attempts):
+            hexs = r.choice(candidates, n, replace=False).tolist()
             if n <= 1:
-                break
+                return hexs
 
             min_dist = len(hexs[0] - hexs[1])
             for i in range(len(hexs)):
@@ -52,9 +54,9 @@ class CoffeeGame:
                         min_dist = min(len(hexs[i] - hexs[j]), min_dist)
 
             if min_dist > threshold:
-                break
+                return hexs
 
-        return hexs
+        raise PlayerArrangementException
 
     def load_config(self, config):
         self.hex_grid = self.create_grid(orientation=config['orientation'], grid_size=config['grid_size'])

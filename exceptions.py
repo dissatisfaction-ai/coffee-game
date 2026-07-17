@@ -18,3 +18,7 @@ class ARUCONotFoundException(Exception):
     def __str__(self):
         return "ARUCO not found"
 
+class PlayerArrangementException(Exception):
+    def __str__(self):
+        return "Could not place all players on the board — try fewer players or a bigger grid"
+

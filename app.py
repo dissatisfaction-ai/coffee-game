@@ -1,4 +1,4 @@
-from datetime import datetime
+import os
 from time import perf_counter
 from uuid import uuid4
 
@@ -6,10 +6,9 @@ import PIL
 from flask import Flask, request
 from flask.json import jsonify
 from flask_cors import CORS, cross_origin
-from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
 
 from coffeegame import CoffeeGame
+from exceptions import PlayerArrangementException
 
 import matplotlib
 from matplotlib import pyplot as plt
@@ -32,36 +31,14 @@ class catchtime:
 
 
 app = Flask(__name__, static_folder='static', static_url_path='/')
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:299792458@localhost:5432/coffee_game"
 
 cors = CORS(app)
 # metrics = PrometheusMetrics(app)
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-# url = "http://localhost:5000"
-url = 'coffee-game.ai'
+url = os.environ.get('COFFEE_GAME_URL', 'http://localhost:5000')
 app.config['CORS_HEADERS'] = 'Content-Type'
 
-
-class Game(db.Model):
-    id = db.Column(db.Integer, primary_key=True)  # primary key
-    players = db.Column(db.JSON, nullable=False)
-    uuid = db.Column(db.String, nullable=False, unique=True)
-    pdf = db.Column(db.String, nullable=False, unique=True)
-    random_state = db.Column(db.Integer, nullable=False, default=42)
-    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    orientation = db.Column(db.String, nullable=False, default='pointy')
-    grid_size = db.Column(db.Float, nullable=False, default=5)
-
-    images = db.relationship("Image", backref='game', lazy=True)
-
-
-class Image(db.Model):
-    id = db.Column(db.Integer, primary_key=True)  # primary key
-    game_id = db.Column(db.Integer, db.ForeignKey('game.id'), nullable=False)
-    image = db.Column(db.String)
-    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    config = db.Column(db.JSON)
+for directory in ('static/pdf', 'static/tmp/states', 'static/images'):
+    os.makedirs(directory, exist_ok=True)
 
 
 @app.route("/")
@@ -74,37 +51,53 @@ def index():
 def create_game():
     request_json = request.get_json()
     players = request_json.get("players")
-    random_state = request_json.get('random_state', 42)
+    random_state = request_json.get('random_state')
     orientation = request_json.get('orientation', 'pointy')
     grid_size = request_json.get('grid_size', 5)
 
+    if not players or not all(isinstance(p, str) and p.strip() for p in players):
+        return jsonify({
+            "error": "true",
+            "message": "Please provide a non-empty name for every player"
+        }), 400
+
+    players = [p.strip() for p in players]
+
+    # names travel inside the QR string, so its delimiters are forbidden
+    forbidden = set('?&=,')
+    if any(forbidden & set(p) for p in players):
+        return jsonify({
+            "error": "true",
+            "message": "Player names must not contain '?', '&', '=' or ','"
+        }), 400
+
+    if len(set(players)) != len(players):
+        return jsonify({
+            "error": "true",
+            "message": "Player names must be unique"
+        }), 400
+
     uuid = uuid4().hex
-    cg = CoffeeGame(
-        players=players,
-        random_state=random_state,
-        orientation=orientation,
-        grid_size=grid_size,
-        uuid=uuid,
-        url=url
-    )
+    try:
+        cg = CoffeeGame(
+            players=players,
+            random_state=random_state,
+            orientation=orientation,
+            grid_size=grid_size,
+            uuid=uuid,
+            url=url
+        )
+    except PlayerArrangementException as e:
+        return jsonify({
+            "error": "true",
+            "message": str(e)
+        }), 422
+
     cg.generate_game_field(f"static/pdf/{uuid}.pdf")
 
-    game = Game(
-        players=players,
-        random_state=random_state,
-        orientation=orientation,
-        grid_size=grid_size,
-        uuid=uuid,
-        pdf=f"{uuid}.pdf"
-    )
-
-    db.session.add(game)
-    db.session.commit()
-
     return jsonify({
-        "id": game.id,
-        "url": f"{url}/static/pdf/{game.pdf}",
-        "date": game.date
+        "uuid": uuid,
+        "url": f"/static/pdf/{uuid}.pdf"
     })
 
 
@@ -119,7 +112,7 @@ def upload_image():
         return jsonify({
             "error": "true",
             "message": "file not attached"
-        })
+        }), 400
 
     try:
         cg = CoffeeGame()
@@ -130,28 +123,11 @@ def upload_image():
         return jsonify({
             "error": "true",
             "message": str(e)
-        })
-
-    uuid = cg.uuid
-
-    # try:
-    #     game = Game.query.filter_by(uuid=uuid).first()
-    # except Exception as e:
-    #     return jsonify({
-    #         "error": "true",
-    #         "message": "Game not found"
-    #     })
+        }), 422
 
     stats = cg.get_number_of_cups()
-    state_path = f"static/tmp/states/{uuid4().hex}.jpg"
     overlay_path = f"static/tmp/states/{uuid4().hex}_overlay.jpg"
     image_path = f"static/images/{uuid4().hex}.jpg"
-
-
-    # Do not save to save time
-
-    # with catchtime('Saving current state'):
-    #     cg.draw_current_state(save=state_path)
 
     with catchtime('Ploting overlay'):
         fig_overlay = detection_stages.plot_image_overlay()
@@ -163,20 +139,11 @@ def upload_image():
         del fig_overlay
         import gc
         gc.collect()
-        
+
     with catchtime('Saving initial image'):
         PIL.Image.open(file.stream).save(image_path)
 
-    # image_entry = Image(
-    #     game=game,
-    #     image=image_path.split("/")[-1],
-    #     config=cg.config
-    # )
-
-    # db.session.add(image_entry)
-    # db.session.commit()
     return jsonify({
         "statistics": stats,
-        # "state_image": f"{url}/{state_path}",
         "overlay_image": f"{overlay_path[6:]}"
     })

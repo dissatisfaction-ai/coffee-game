@@ -7,21 +7,26 @@ import numpy as np
 from cv2 import aruco
 from matplotlib.patches import RegularPolygon
 from scipy import ndimage
-import zbarlight
+
+try:
+    import zbarlight  # optional, needs system libzbar; cv2 QR detector is the fallback
+except ImportError:
+    zbarlight = None
 
 from exceptions import QRNotFoundException
 
 
 def decode_qr(qr_image, full_image):
     print("Trying to decode QR code from cropped image...")
-    try:
-        print('Using zbarlight...', end=' ')
-        qr_code_value = zbarlight.scan_codes(['qrcode'], qr_image)[0].decode('utf-8')
-    except:
-        print('FAILED')
-    else:
-        print('OK')
-        return qr_code_value
+    if zbarlight is not None:
+        try:
+            print('Using zbarlight...', end=' ')
+            qr_code_value = zbarlight.scan_codes(['qrcode'], qr_image)[0].decode('utf-8')
+        except:
+            print('FAILED')
+        else:
+            print('OK')
+            return qr_code_value
 
     try: 
         print('Using cv2...', end=' ')
@@ -36,14 +41,15 @@ def decode_qr(qr_image, full_image):
 
     print("Trying to decode QR code from full image...")
 
-    try:
-        print('Using zbarlight...', end=' ')
-        qr_code_value = zbarlight.scan_codes(['qrcode'], full_image)[0].decode('utf-8')
-    except:
-        print('FAILED')
-    else:
-        print('OK')
-        return qr_code_value
+    if zbarlight is not None:
+        try:
+            print('Using zbarlight...', end=' ')
+            qr_code_value = zbarlight.scan_codes(['qrcode'], full_image)[0].decode('utf-8')
+        except:
+            print('FAILED')
+        else:
+            print('OK')
+            return qr_code_value
 
     try: 
         print('Using cv2...', end=' ')
@@ -61,14 +67,15 @@ def decode_qr(qr_image, full_image):
     smaller_image = full_image.resize((int(full_image.size[0] * 2000 / max(full_image.size)),
                             int(full_image.size[1] * 2000 / max(full_image.size))))
 
-    try:
-        print('Using zbarlight...', end=' ')
-        qr_code_value = zbarlight.scan_codes(['qrcode'], smaller_image)[0].decode('utf-8')
-    except:
-        print('FAILED')
-    else:
-        print('OK')
-        return qr_code_value
+    if zbarlight is not None:
+        try:
+            print('Using zbarlight...', end=' ')
+            qr_code_value = zbarlight.scan_codes(['qrcode'], smaller_image)[0].decode('utf-8')
+        except:
+            print('FAILED')
+        else:
+            print('OK')
+            return qr_code_value
 
     try: 
         print('Using cv2...', end=' ')
